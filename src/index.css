@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 12 74 110; /* sky-900 */
+    --color-primary-light: 186 230 253; /* sky-200 */
+    --color-secondary: 5 150 105; /* emerald-600 */
+    --color-accent: 249 115 22; /* orange-500 */
+    --color-success: 22 163 74; /* green-600 */
+    --color-warning: 234 179 8; /* yellow-500 */
+    --color-error: 220 38 38; /* red-600 */
+    --color-gray: 107 114 128; /* gray-500 */
+  }
+
+  html {
+    font-family: Inter, system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-[#00080A] dark:text-gray-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold leading-tight;
+  }
+
+  h1 {
+    @apply text-3xl sm:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl sm:text-2xl;
+  }
+
+  h4 {
+    @apply text-lg sm:text-xl;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-[#00080A];
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/20 dark:hover:bg-primary/80;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary/90 focus:ring-secondary/20 dark:hover:bg-secondary/80;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent/90 focus:ring-accent/20 dark:hover:bg-accent/80;
+  }
+
+  .btn-outline {
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 focus:ring-gray-300 dark:border-gray-700/50 dark:bg-black/20 dark:text-gray-300 dark:hover:bg-black/30;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-300 dark:text-gray-300 dark:hover:bg-black/20;
+  }
+
+  .card {
+    @apply rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700/50 dark:bg-black/20;
+  }
+
+  .input {
+    @apply block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700/50 dark:bg-black/20 dark:text-gray-100 dark:focus:border-primary-light dark:focus:ring-primary-light;
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success/10 text-success dark:bg-success/20;
+  }
+
+  .badge-warning {
+    @apply bg-warning/10 text-warning dark:bg-warning/20;
+  }
+
+  .badge-error {
+    @apply bg-error/10 text-error dark:bg-error/20;
+  }
+
+  .badge-info {
+    @apply bg-primary-light text-primary dark:bg-primary/20 dark:text-primary-light;
+  }
+
+  .status-indicator {
+    @apply inline-block h-2.5 w-2.5 rounded-full;
+  }
+
+  .status-open {
+    @apply bg-primary dark:bg-primary-light;
+  }
+
+  .status-assigned {
+    @apply bg-accent;
+  }
+
+  .status-resolved {
+    @apply bg-secondary;
+  }
+
+  .status-cancelled {
+    @apply bg-error;
+  }
+
+  .status-closed {
+    @apply bg-gray;
+  }
+
+  .ticket-type-job {
+    @apply bg-primary-light text-primary dark:bg-primary/20 dark:text-primary-light;
+  }
+
+  .ticket-type-fault {
+    @apply bg-error/10 text-error dark:bg-error/20;
+  }
+}
