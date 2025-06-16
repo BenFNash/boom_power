@@ -41,13 +41,26 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('roles')
-      .eq('id', user.id)
-      .single();
+    // Check if user has admin role using user_roles table
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select(`
+        roles (
+          role_name
+        )
+      `)
+      .eq('user_id', user.id);
 
-    if (profileError || !profile?.roles?.includes('admin')) {
+    if (rolesError) {
+      throw new Error('Error checking user roles');
+    }
+
+    // Check if user has admin role
+    const hasAdminRole = userRoles?.some(userRole => 
+      userRole.roles && userRole.roles.role_name === 'admin'
+    );
+
+    if (!hasAdminRole) {
       throw new Error('Unauthorized - Admin access required');
     }
 
