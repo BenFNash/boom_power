@@ -1,29 +1,15 @@
 /*
-  # Create jobs table for tracking work assignments
-
-  1. New Tables
-    - `jobs`
-      - `id` (uuid, primary key)
-      - `ticket_id` (integer, foreign key to tickets)
-      - `job_number` (text, unique, auto-generated)
-      - `assigned_to_user_id` (uuid, foreign key to profiles)
-      - `assigned_company_id` (uuid, foreign key to companies)
-      - `status` (enum: pending, in_progress, completed, on_hold)
-      - `scheduled_start_date` (date)
-      - `scheduled_end_date` (date)
-      - `actual_start_date` (timestamptz, nullable)
-      - `actual_end_date` (timestamptz, nullable)
-      - `notes` (text, nullable)
-      - `created_at` (timestamptz)
-      - `updated_at` (timestamptz)
-
+  # Jobs System
+  
+  1. Tables
+    - `jobs` - Work assignments linked to tickets
+  
   2. Security
-    - Enable RLS on `jobs` table
-    - Add policies for company-based access control
-    - Add policies for admin and edit role permissions
-
+    - Enable RLS on jobs table
+    - Add policies for company-based and role-based access
+  
   3. Functions
-    - Auto-generate job numbers (J00001, J00002, etc.)
+    - Auto-generate job numbers
     - Auto-update timestamps
 */
 
@@ -35,12 +21,12 @@ EXCEPTION
 END $$;
 
 -- Create jobs table
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE IF NOT EXISTS public.jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  ticket_id integer NOT NULL REFERENCES tickets(id) ON DELETE RESTRICT,
+  ticket_id integer NOT NULL REFERENCES public.tickets(id) ON DELETE RESTRICT,
   job_number text UNIQUE NOT NULL,
-  assigned_to_user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
-  assigned_company_id uuid NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
+  assigned_to_user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
+  assigned_company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
   status job_status NOT NULL DEFAULT 'pending',
   scheduled_start_date date NOT NULL,
   scheduled_end_date date NOT NULL,
@@ -50,6 +36,17 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
+-- Enable RLS
+ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_jobs_ticket_id ON jobs(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_assigned_to_user_id ON jobs(assigned_to_user_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_assigned_company_id ON jobs(assigned_company_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_dates ON jobs(scheduled_start_date, scheduled_end_date);
+CREATE INDEX IF NOT EXISTS idx_jobs_job_number ON jobs(job_number);
 
 -- Create function to generate job numbers
 CREATE OR REPLACE FUNCTION generate_job_number()
@@ -103,9 +100,6 @@ CREATE TRIGGER update_jobs_timestamp
   BEFORE UPDATE ON jobs
   FOR EACH ROW
   EXECUTE FUNCTION update_jobs_updated_at();
-
--- Enable RLS
-ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -169,12 +163,4 @@ CREATE POLICY "Admins can delete jobs"
   ON jobs
   FOR DELETE
   TO authenticated
-  USING (is_admin(auth.uid()));
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_jobs_ticket_id ON jobs(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_assigned_to_user_id ON jobs(assigned_to_user_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_assigned_company_id ON jobs(assigned_company_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
-CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_dates ON jobs(scheduled_start_date, scheduled_end_date);
-CREATE INDEX IF NOT EXISTS idx_jobs_job_number ON jobs(job_number);
+  USING (is_admin(auth.uid())); 
