@@ -114,7 +114,7 @@ export interface CompanyContact {
   companyName: string;
   contactName: string;
   contactEmail: string;
-  active?: boolean;
+  active: boolean;
   createdAt: string;
 }
 

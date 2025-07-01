@@ -109,8 +109,8 @@ const TicketsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col justify-between sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tickets</h1>
-          <p className="text-gray-500">Manage all your tickets in one place</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tickets</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage all your tickets in one place</p>
         </div>
         
         {canEdit && (

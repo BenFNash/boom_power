@@ -102,6 +102,7 @@ export interface Database {
           company_id: string
           contact_name: string
           contact_email: string
+          active: boolean
           created_at: string
         }
         Insert: {
@@ -109,6 +110,7 @@ export interface Database {
           company_id: string
           contact_name: string
           contact_email: string
+          active?: boolean
           created_at?: string
         }
         Update: {
@@ -116,6 +118,7 @@ export interface Database {
           company_id?: string
           contact_name?: string
           contact_email?: string
+          active?: boolean
           created_at?: string
         }
       }
