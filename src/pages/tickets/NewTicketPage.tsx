@@ -21,7 +21,7 @@ const NewTicketPage: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Create New Ticket</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create New Ticket</h1>
       <TicketForm onSubmit={handleSubmit} isLoading={loading} />
     </div>
   );

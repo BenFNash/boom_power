@@ -19,7 +19,7 @@ import toast from 'react-hot-toast';
 interface FormData {
   companyName?: string;
   siteName?: string;
-  ownerName?: string;
+  siteOwnerCompanyId?: string;
   contactName?: string;
   contactEmail?: string;
   companyId?: string;
@@ -29,7 +29,7 @@ const ReferenceDataPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'companies' | 'sites' | 'owners' | 'contacts'
+    'companies' | 'sites' | 'contacts'
   >('companies');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({});
@@ -39,21 +39,17 @@ const ReferenceDataPage: React.FC = () => {
   const {
     companies,
     sites,
-    siteOwners,
     companyContacts,
     loading,
     error,
     fetchCompanies,
     fetchSites,
-    fetchSiteOwners,
     fetchCompanyContacts,
     createCompany,
     createSite,
-    createSiteOwner,
     createCompanyContact,
     updateCompany,
     updateSite,
-    updateSiteOwner,
     updateCompanyContact,
   } = useReferenceDataStore();
 
@@ -70,9 +66,7 @@ const ReferenceDataPage: React.FC = () => {
           break;
         case 'sites':
           await fetchSites(showInactive);
-          break;
-        case 'owners':
-          await fetchSiteOwners(showInactive);
+          await fetchCompanies(); // Need companies for the dropdown
           break;
         case 'contacts':
           await fetchCompanyContacts(showInactive);
@@ -86,7 +80,6 @@ const ReferenceDataPage: React.FC = () => {
     showInactive,
     fetchCompanies,
     fetchSites,
-    fetchSiteOwners,
     fetchCompanyContacts,
     user,
     navigate,
@@ -105,10 +98,11 @@ const ReferenceDataPage: React.FC = () => {
         data = { companyName: companies.find((c) => c.id === id)?.companyName };
         break;
       case 'sites':
-        data = { siteName: sites.find((s) => s.id === id)?.siteName };
-        break;
-      case 'owners':
-        data = { ownerName: siteOwners.find((o) => o.id === id)?.ownerName };
+        const site = sites.find((s) => s.id === id);
+        data = { 
+          siteName: site?.siteName,
+          siteOwnerCompanyId: site?.siteOwnerCompanyId
+        };
         break;
       case 'contacts':
         const contact = companyContacts.find((c) => c.id === id);
@@ -137,9 +131,6 @@ const ReferenceDataPage: React.FC = () => {
         case 'sites':
           await updateSite(id, { active: false });
           break;
-        case 'owners':
-          await updateSiteOwner(id, { active: false });
-          break;
         case 'contacts':
           await updateCompanyContact(id, { active: false });
           break;
@@ -159,9 +150,6 @@ const ReferenceDataPage: React.FC = () => {
           break;
         case 'sites':
           await updateSite(id, { active: true });
-          break;
-        case 'owners':
-          await updateSiteOwner(id, { active: true });
           break;
         case 'contacts':
           await updateCompanyContact(id, { active: true });
@@ -189,18 +177,15 @@ const ReferenceDataPage: React.FC = () => {
           break;
         case 'sites':
           if (editingId) {
-            await updateSite(editingId, { siteName: formData.siteName! });
-          } else {
-            await createSite({ siteName: formData.siteName! });
-          }
-          break;
-        case 'owners':
-          if (editingId) {
-            await updateSiteOwner(editingId, {
-              ownerName: formData.ownerName!,
+            await updateSite(editingId, { 
+              siteName: formData.siteName!,
+              siteOwnerCompanyId: formData.siteOwnerCompanyId!
             });
           } else {
-            await createSiteOwner({ ownerName: formData.ownerName! });
+            await createSite({ 
+              siteName: formData.siteName!,
+              siteOwnerCompanyId: formData.siteOwnerCompanyId!
+            });
           }
           break;
         case 'contacts':
@@ -252,32 +237,37 @@ const ReferenceDataPage: React.FC = () => {
         );
       case 'sites':
         return (
-          <div>
-            <label className="label">Site Name</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.siteName || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, siteName: e.target.value })
-              }
-              required
-            />
-          </div>
-        );
-      case 'owners':
-        return (
-          <div>
-            <label className="label">Owner Name</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.ownerName || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, ownerName: e.target.value })
-              }
-              required
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="label">Site Name</label>
+              <input
+                type="text"
+                className="input"
+                value={formData.siteName || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, siteName: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Site Owner Company</label>
+              <select
+                className="input"
+                value={formData.siteOwnerCompanyId || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, siteOwnerCompanyId: e.target.value })
+                }
+                required
+              >
+                <option value="">Select Company</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         );
       case 'contacts':
@@ -441,6 +431,9 @@ const ReferenceDataPage: React.FC = () => {
                     Site Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Owner Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Created
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
@@ -463,6 +456,9 @@ const ReferenceDataPage: React.FC = () => {
                   >
                     <td className="whitespace-nowrap px-6 py-4">
                       {site.siteName}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      {site.siteOwnerCompanyName || 'Unknown'}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       {formatDate(site.createdAt)}
@@ -513,87 +509,7 @@ const ReferenceDataPage: React.FC = () => {
           </div>
         );
 
-      case 'owners':
-        return (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Owner Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {siteOwners.map((owner) => (
-                  <tr
-                    key={owner.id}
-                    className={
-                      owner.active === false
-                        ? 'bg-gray-50 dark:bg-gray-800/50'
-                        : ''
-                    }
-                  >
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {owner.ownerName}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {formatDate(owner.createdAt)}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-2 text-xs font-semibold ${
-                          owner.active === false
-                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        }`}
-                      >
-                        {owner.active === false ? 'Archived' : 'Active'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right">
-                      {owner.active === false ? (
-                        <Button
-                          variant="ghost"
-                          className="text-primary dark:text-primary-light"
-                          onClick={() => handleUnarchive(owner.id)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            className="mr-2"
-                            onClick={() => handleEdit(owner.id)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="text-gray-600"
-                            onClick={() => handleArchive(owner.id)}
-                          >
-                            <Archive className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
+
 
       case 'contacts':
         return (
@@ -726,12 +642,6 @@ const ReferenceDataPage: React.FC = () => {
                 onClick={() => setActiveTab('sites')}
               >
                 Sites
-              </Button>
-              <Button
-                variant={activeTab === 'owners' ? 'primary' : 'outline'}
-                onClick={() => setActiveTab('owners')}
-              >
-                Site Owners
               </Button>
               <Button
                 variant={activeTab === 'contacts' ? 'primary' : 'outline'}

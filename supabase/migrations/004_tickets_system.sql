@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS public.tickets (
   id integer PRIMARY KEY DEFAULT nextval('ticket_id_seq'),
   ticket_number text UNIQUE NOT NULL,
   site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE RESTRICT,
-  site_owner_id uuid NOT NULL REFERENCES public.site_owners(id) ON DELETE RESTRICT,
+  site_owner_company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
   ticket_type text NOT NULL CHECK (ticket_type IN ('Job', 'Fault')),
   priority text NOT NULL,
   date_raised timestamptz DEFAULT now(),
@@ -121,6 +121,7 @@ CREATE POLICY "Users can view tickets they created or are assigned to"
       WHERE p.id = auth.uid()
       AND (
         p.company_id = tickets.assigned_company_id OR
+        p.company_id = tickets.site_owner_company_id OR
         is_admin(auth.uid()) OR
         EXISTS (
           SELECT 1 FROM user_roles ur
@@ -147,6 +148,7 @@ CREATE POLICY "Users can update tickets they have access to"
       WHERE p.id = auth.uid()
       AND (
         p.company_id = tickets.assigned_company_id OR
+        p.company_id = tickets.site_owner_company_id OR
         is_admin(auth.uid()) OR
         EXISTS (
           SELECT 1 FROM user_roles ur
@@ -164,6 +166,7 @@ CREATE POLICY "Users can update tickets they have access to"
       WHERE p.id = auth.uid()
       AND (
         p.company_id = tickets.assigned_company_id OR
+        p.company_id = tickets.site_owner_company_id OR
         is_admin(auth.uid()) OR
         EXISTS (
           SELECT 1 FROM user_roles ur
@@ -190,6 +193,7 @@ CREATE POLICY "Users can view communications for accessible tickets"
           WHERE p.id = auth.uid()
           AND (
             p.company_id = t.assigned_company_id OR
+            p.company_id = t.site_owner_company_id OR
             is_admin(auth.uid()) OR
             EXISTS (
               SELECT 1 FROM user_roles ur
@@ -217,6 +221,7 @@ CREATE POLICY "Users can create communications for accessible tickets"
           WHERE p.id = auth.uid()
           AND (
             p.company_id = t.assigned_company_id OR
+            p.company_id = t.site_owner_company_id OR
             is_admin(auth.uid()) OR
             EXISTS (
               SELECT 1 FROM user_roles ur
@@ -245,6 +250,7 @@ CREATE POLICY "Users can view attachments for accessible tickets"
           WHERE p.id = auth.uid()
           AND (
             p.company_id = t.assigned_company_id OR
+            p.company_id = t.site_owner_company_id OR
             is_admin(auth.uid()) OR
             EXISTS (
               SELECT 1 FROM user_roles ur
@@ -272,6 +278,7 @@ CREATE POLICY "Users can create attachments for accessible tickets"
           WHERE p.id = auth.uid()
           AND (
             p.company_id = t.assigned_company_id OR
+            p.company_id = t.site_owner_company_id OR
             is_admin(auth.uid()) OR
             EXISTS (
               SELECT 1 FROM user_roles ur

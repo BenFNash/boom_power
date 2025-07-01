@@ -4,7 +4,6 @@
   1. Sample Data
     - Companies
     - Sites
-    - Site Owners
     - Company Contacts
     - Sample tickets and communications
   
@@ -23,23 +22,22 @@ INSERT INTO public.companies (id, company_name) VALUES
   (gen_random_uuid(), 'Security Systems Pro')
 ON CONFLICT (company_name) DO NOTHING;
 
--- Insert sample sites
-INSERT INTO public.sites (id, site_name) VALUES
-  (gen_random_uuid(), 'Main Office Building'),
-  (gen_random_uuid(), 'Warehouse Facility'),
-  (gen_random_uuid(), 'Data Center'),
-  (gen_random_uuid(), 'Manufacturing Plant'),
-  (gen_random_uuid(), 'Distribution Center')
+-- Insert sample sites (with company ownership)
+INSERT INTO public.sites (id, site_name, site_owner_company_id) 
+SELECT 
+  gen_random_uuid(),
+  site_name,
+  c.id
+FROM (
+  VALUES 
+    ('Main Office Building'),
+    ('Warehouse Facility'),
+    ('Data Center'),
+    ('Manufacturing Plant'),
+    ('Distribution Center')
+) AS sites(site_name)
+CROSS JOIN (SELECT id FROM public.companies LIMIT 1) c
 ON CONFLICT (site_name) DO NOTHING;
-
--- Insert sample site owners
-INSERT INTO public.site_owners (id, owner_name) VALUES
-  (gen_random_uuid(), 'Boom Power Ltd'),
-  (gen_random_uuid(), 'Industrial Holdings Inc'),
-  (gen_random_uuid(), 'Commercial Properties LLC'),
-  (gen_random_uuid(), 'Tech Campus Management'),
-  (gen_random_uuid(), 'Logistics Solutions Ltd')
-ON CONFLICT (owner_name) DO NOTHING;
 
 -- Insert sample company contacts
 INSERT INTO public.company_contacts (id, company_id, contact_name, contact_email)
@@ -57,7 +55,6 @@ DO $$
 DECLARE
   user_id uuid;
   site_id uuid;
-  site_owner_id uuid;
   company_id uuid;
   contact_id uuid;
 BEGIN
@@ -66,9 +63,6 @@ BEGIN
   
   -- Get first site
   SELECT id INTO site_id FROM public.sites LIMIT 1;
-  
-  -- Get first site owner
-  SELECT id INTO site_owner_id FROM public.site_owners LIMIT 1;
   
   -- Get first company
   SELECT id INTO company_id FROM public.companies LIMIT 1;
@@ -81,7 +75,7 @@ BEGIN
     -- Insert sample tickets
     INSERT INTO public.tickets (
       site_id,
-      site_owner_id,
+      site_owner_company_id,
       ticket_type,
       priority,
       who_raised_id,
@@ -92,19 +86,19 @@ BEGIN
       description,
       status
     ) VALUES
-      (site_id, site_owner_id, 'Job', 'Medium', user_id, CURRENT_DATE + 7, company_id, contact_id, 
+      (site_id, company_id, 'Job', 'Medium', user_id, CURRENT_DATE + 7, company_id, contact_id, 
        'Annual HVAC Maintenance', 'Schedule annual maintenance check for all HVAC systems at the main office building.', 'open'),
       
-      (site_id, site_owner_id, 'Fault', 'High', user_id, CURRENT_DATE + 2, company_id, contact_id,
+      (site_id, company_id, 'Fault', 'High', user_id, CURRENT_DATE + 2, company_id, contact_id,
        'Electrical Panel Fault', 'Electrical panel showing warning lights. Immediate attention required.', 'assigned'),
       
-      (site_id, site_owner_id, 'Job', 'Low', user_id, CURRENT_DATE + 14, company_id, contact_id,
+      (site_id, company_id, 'Job', 'Low', user_id, CURRENT_DATE + 14, company_id, contact_id,
        'Security System Update', 'Update security system software and firmware across all locations.', 'open'),
       
-      (site_id, site_owner_id, 'Fault', 'Critical', user_id, CURRENT_DATE + 1, company_id, contact_id,
+      (site_id, company_id, 'Fault', 'Critical', user_id, CURRENT_DATE + 1, company_id, contact_id,
        'Fire Alarm System Failure', 'Fire alarm system not responding to test signals. Emergency repair needed.', 'resolved'),
       
-      (site_id, site_owner_id, 'Job', 'Medium', user_id, CURRENT_DATE + 10, company_id, contact_id,
+      (site_id, company_id, 'Job', 'Medium', user_id, CURRENT_DATE + 10, company_id, contact_id,
        'Lighting System Maintenance', 'Replace aging light fixtures and upgrade to LED lighting system.', 'open');
     
     -- Insert sample communications for the first ticket

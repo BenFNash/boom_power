@@ -26,7 +26,7 @@ export interface Ticket {
   id: string;
   ticketNumber: string;
   site: string;
-  siteOwner: string;
+  siteOwnerCompany: string;
   type: TicketType;
   priority: string;
   dateRaised: string;
@@ -102,13 +102,8 @@ export interface Company {
 export interface Site {
   id: string;
   siteName: string;
-  active?: boolean;
-  createdAt: string;
-}
-
-export interface SiteOwner {
-  id: string;
-  ownerName: string;
+  siteOwnerCompanyId: string;
+  siteOwnerCompanyName?: string;
   active?: boolean;
   createdAt: string;
 }
@@ -152,8 +147,8 @@ export interface JobTemplate {
   description?: string;
   siteId: string;
   siteName: string;
-  siteOwnerId: string;
-  siteOwnerName: string;
+  siteOwnerCompanyId: string;
+  siteOwnerCompanyName: string;
   ticketType: 'Job' | 'Fault';
   priority: string;
   assignedCompanyId: string;

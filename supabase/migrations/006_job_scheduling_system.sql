@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.job_templates (
   name text NOT NULL,
   description text,
   site_id uuid REFERENCES public.sites(id) ON DELETE RESTRICT,
-  site_owner_id uuid REFERENCES public.site_owners(id) ON DELETE RESTRICT,
+  site_owner_company_id uuid REFERENCES public.companies(id) ON DELETE RESTRICT,
   ticket_type text NOT NULL CHECK (ticket_type IN ('Job', 'Fault')),
   priority text NOT NULL,
   assigned_company_id uuid REFERENCES public.companies(id) ON DELETE RESTRICT,
@@ -173,7 +173,7 @@ BEGIN
     -- Create the ticket
     INSERT INTO tickets (
       site_id,
-      site_owner_id,
+      site_owner_company_id,
       ticket_type,
       priority,
       who_raised_id,
@@ -186,7 +186,7 @@ BEGIN
       status
     ) VALUES (
       template_record.site_id,
-      template_record.site_owner_id,
+      template_record.site_owner_company_id,
       template_record.ticket_type,
       template_record.priority,
       schedule_record.created_by,

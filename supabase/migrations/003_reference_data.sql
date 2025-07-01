@@ -3,8 +3,7 @@
   
   1. Tables
     - `companies` - Organizations that can be assigned work
-    - `sites` - Physical locations where work is performed
-    - `site_owners` - Entities that own/manage sites
+    - `sites` - Physical locations where work is performed (owned by companies)
     - `company_contacts` - Contact persons within companies
   
   2. Security
@@ -20,6 +19,7 @@
 CREATE TABLE IF NOT EXISTS public.companies (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_name text NOT NULL UNIQUE,
+  active boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
 );
 
@@ -27,13 +27,8 @@ CREATE TABLE IF NOT EXISTS public.companies (
 CREATE TABLE IF NOT EXISTS public.sites (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   site_name text NOT NULL UNIQUE,
-  created_at timestamptz DEFAULT now()
-);
-
--- Create site owners table
-CREATE TABLE IF NOT EXISTS public.site_owners (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  owner_name text NOT NULL UNIQUE,
+  site_owner_company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
+  active boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
 );
 
@@ -55,15 +50,20 @@ FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE SET NULL;
 -- Enable RLS on all tables
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sites ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.site_owners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.company_contacts ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for companies
-CREATE POLICY "Anyone can view companies"
+CREATE POLICY "Anyone can view active companies"
   ON public.companies
   FOR SELECT
   TO authenticated
-  USING (true);
+  USING (active = true);
+
+CREATE POLICY "Admins can view all companies"
+  ON public.companies
+  FOR SELECT
+  TO authenticated
+  USING (is_admin(auth.uid()));
 
 CREATE POLICY "Admins can insert companies"
   ON public.companies
@@ -85,11 +85,27 @@ CREATE POLICY "Admins can delete companies"
   USING (is_admin(auth.uid()));
 
 -- Create policies for sites
-CREATE POLICY "Anyone can view sites"
+CREATE POLICY "Anyone can view active sites"
   ON public.sites
   FOR SELECT
   TO authenticated
-  USING (true);
+  USING (active = true);
+
+CREATE POLICY "Admins can view all sites"
+  ON public.sites
+  FOR SELECT
+  TO authenticated
+  USING (is_admin(auth.uid()));
+
+CREATE POLICY "Users can view sites owned by their company"
+  ON public.sites
+  FOR SELECT
+  TO authenticated
+  USING (
+    site_owner_company_id IN (
+      SELECT company_id FROM profiles WHERE id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Admins can insert sites"
   ON public.sites
@@ -106,32 +122,6 @@ CREATE POLICY "Admins can update sites"
 
 CREATE POLICY "Admins can delete sites"
   ON public.sites
-  FOR DELETE
-  TO authenticated
-  USING (is_admin(auth.uid()));
-
--- Create policies for site owners
-CREATE POLICY "Anyone can view site owners"
-  ON public.site_owners
-  FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Admins can insert site owners"
-  ON public.site_owners
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (is_admin(auth.uid()));
-
-CREATE POLICY "Admins can update site owners"
-  ON public.site_owners
-  FOR UPDATE
-  TO authenticated
-  USING (is_admin(auth.uid()))
-  WITH CHECK (is_admin(auth.uid()));
-
-CREATE POLICY "Admins can delete site owners"
-  ON public.site_owners
   FOR DELETE
   TO authenticated
   USING (is_admin(auth.uid()));

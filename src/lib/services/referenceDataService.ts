@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { Company, Site, SiteOwner, CompanyContact } from '../../types';
+import { Company, Site, CompanyContact } from '../../types';
 
 export const referenceDataService = {
   // Companies
@@ -64,7 +64,12 @@ export const referenceDataService = {
 
   // Sites
   async getSites(includeInactive = false) {
-    const query = supabase.from('sites').select('*');
+    const query = supabase.from('sites').select(`
+      *,
+      companies!sites_site_owner_company_id_fkey (
+        company_name
+      )
+    `);
 
     if (!includeInactive) {
       query.eq('active', true);
@@ -76,6 +81,8 @@ export const referenceDataService = {
     return data.map((site) => ({
       id: site.id,
       siteName: site.site_name,
+      siteOwnerCompanyId: site.site_owner_company_id,
+      siteOwnerCompanyName: site.companies?.company_name,
       active: site.active,
       createdAt: site.created_at,
     })) as Site[];
@@ -87,16 +94,24 @@ export const referenceDataService = {
       .insert([
         {
           site_name: site.siteName,
+          site_owner_company_id: site.siteOwnerCompanyId,
           active: site.active,
         },
       ])
-      .select()
+      .select(`
+        *,
+        companies!sites_site_owner_company_id_fkey (
+          company_name
+        )
+      `)
       .single();
 
     if (error) throw error;
     return {
       id: data.id,
       siteName: data.site_name,
+      siteOwnerCompanyId: data.site_owner_company_id,
+      siteOwnerCompanyName: data.companies?.company_name,
       active: data.active,
       createdAt: data.created_at,
     } as Site;
@@ -107,80 +122,30 @@ export const referenceDataService = {
       .from('sites')
       .update({
         site_name: site.siteName,
+        site_owner_company_id: site.siteOwnerCompanyId,
         active: site.active,
       })
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        companies!sites_site_owner_company_id_fkey (
+          company_name
+        )
+      `)
       .single();
 
     if (error) throw error;
     return {
       id: data.id,
       siteName: data.site_name,
+      siteOwnerCompanyId: data.site_owner_company_id,
+      siteOwnerCompanyName: data.companies?.company_name,
       active: data.active,
       createdAt: data.created_at,
     } as Site;
   },
 
-  // Site Owners
-  async getSiteOwners(includeInactive = false) {
-    const query = supabase.from('site_owners').select('*');
 
-    if (!includeInactive) {
-      query.eq('active', true);
-    }
-
-    const { data, error } = await query.order('owner_name');
-
-    if (error) throw error;
-    return data.map((owner) => ({
-      id: owner.id,
-      ownerName: owner.owner_name,
-      active: owner.active,
-      createdAt: owner.created_at,
-    })) as SiteOwner[];
-  },
-
-  async createSiteOwner(owner: Omit<SiteOwner, 'id' | 'created_at'>) {
-    const { data, error } = await supabase
-      .from('site_owners')
-      .insert([
-        {
-          owner_name: owner.ownerName,
-          active: owner.active,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return {
-      id: data.id,
-      ownerName: data.owner_name,
-      active: data.active,
-      createdAt: data.created_at,
-    } as SiteOwner;
-  },
-
-  async updateSiteOwner(id: string, owner: Partial<SiteOwner>) {
-    const { data, error } = await supabase
-      .from('site_owners')
-      .update({
-        owner_name: owner.owner_name,
-        active: owner.active,
-      })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return {
-      id: data.id,
-      ownerName: data.owner_name,
-      active: data.active,
-      createdAt: data.created_at,
-    } as SiteOwner;
-  },
 
   // Company Contacts
   async getCompanyContacts(includeInactive = false) {

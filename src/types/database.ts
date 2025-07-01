@@ -56,16 +56,19 @@ export interface Database {
         Row: {
           id: string
           company_name: string
+          active: boolean
           created_at: string
         }
         Insert: {
           id?: string
           company_name: string
+          active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           company_name?: string
+          active?: boolean
           created_at?: string
         }
       }
@@ -73,36 +76,26 @@ export interface Database {
         Row: {
           id: string
           site_name: string
+          site_owner_company_id: string
+          active: boolean
           created_at: string
         }
         Insert: {
           id?: string
           site_name: string
+          site_owner_company_id: string
+          active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           site_name?: string
+          site_owner_company_id?: string
+          active?: boolean
           created_at?: string
         }
       }
-      site_owners: {
-        Row: {
-          id: string
-          owner_name: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          owner_name: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          owner_name?: string
-          created_at?: string
-        }
-      }
+
       company_contacts: {
         Row: {
           id: string
@@ -131,7 +124,7 @@ export interface Database {
           id: string
           ticket_number: string
           site_id: string
-          site_owner_id: string
+          site_owner_company_id: string
           ticket_type: string
           priority: string
           date_raised: string
@@ -150,7 +143,7 @@ export interface Database {
           id?: string
           ticket_number: string
           site_id: string
-          site_owner_id: string
+          site_owner_company_id: string
           ticket_type: string
           priority: string
           date_raised?: string
@@ -169,7 +162,7 @@ export interface Database {
           id?: string
           ticket_number?: string
           site_id?: string
-          site_owner_id?: string
+          site_owner_company_id?: string
           ticket_type?: string
           priority?: string
           date_raised?: string
