@@ -334,42 +334,36 @@ const TicketDetailPage: React.FC = () => {
             </Card.Header>
             
             <Card.Content>
-              <div className="space-y-4">
-                <div className="relative pl-6">
-                  <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light"></div>
-                  <div className="absolute left-1.5 top-4 h-full w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="relative min-h-[200px] space-y-4">
+                <div className="absolute left-1.5 top-4 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 z-0" />
+                <div className="relative pl-6 z-10">
+                  <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light z-10"></div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Created</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {format(new Date(ticket.createdAt), 'PPp')} by {ticket.whoRaised}
                   </p>
                 </div>
-                
-                {communications.map((comm, index) => (
-                  <div key={comm.id} className="relative pl-6">
-                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light"></div>
-                    {index < communications.length - 1 && (
-                      <div className="absolute left-1.5 top-4 h-full w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    )}
+                {communications.map((comm) => (
+                  <div key={comm.id} className="relative pl-6 z-10">
+                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Comment Added</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {format(new Date(comm.createdAt), 'PPp')} by {comm.user.firstName} {comm.user.lastName}
                     </p>
                   </div>
                 ))}
-                
                 {ticket.status === 'closed' && (
-                  <div className="relative pl-6">
-                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-success"></div>
+                  <div className="relative pl-6 z-10">
+                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-success z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Closed</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {format(new Date(ticket.updatedAt), 'PPp')}
                     </p>
                   </div>
                 )}
-                
                 {ticket.status === 'cancelled' && (
-                  <div className="relative pl-6">
-                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-error"></div>
+                  <div className="relative pl-6 z-10">
+                    <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-error z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Cancelled</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {format(new Date(ticket.updatedAt), 'PPp')}

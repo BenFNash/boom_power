@@ -158,7 +158,7 @@ const TicketForm: React.FC<TicketFormProps> = ({
         type: 'fault',
         priority: formData.priority || '',
         dateRaised: initialData.dateRaised || now,
-        whoRaised: initialData.whoRaised || `${user.firstName} ${user.lastName}`,
+        whoRaised: initialData.whoRaised || `${user.email}`,
         whoRaisedId: user.id,
         targetCompletionDate: initialData.targetCompletionDate || formatISO(targetDate),
         companyToAssign: formData.companyToAssign || '',
