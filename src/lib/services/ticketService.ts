@@ -52,17 +52,17 @@ export const ticketService = {
         sites!inner(
           site_name
         ),
-        site_owners!inner(
-          owner_name
-        ),
         profiles!inner(
           id,
           name
         ),
-        companies(
+        companies:site_owner_company_id(
           company_name
         ),
-        company_contacts(
+        assigned_company:assigned_company_id(
+          company_name
+        ),
+        company_contacts:assigned_contact_id(
           contact_name
         )
       `, { count: 'exact' });
@@ -120,14 +120,14 @@ export const ticketService = {
         id: ticket.id,
         ticketNumber: ticket.ticket_number,
         site: ticket.sites.site_name,
-        siteOwner: ticket.site_owners.owner_name,
+        siteOwnerCompany: ticket.companies?.company_name || '',
         type: ticket.ticket_type.toLowerCase() as 'job' | 'fault',
         priority: ticket.priority,
         dateRaised: ticket.date_raised,
         whoRaisedId: ticket.who_raised_id,
         whoRaised: ticket.profiles.name,
         targetCompletionDate: ticket.target_completion_date,
-        companyToAssign: ticket.companies?.company_name || '',
+        companyToAssign: ticket.assigned_company?.company_name || '',
         companyContact: ticket.company_contacts?.contact_name || '',
         subject: ticket.subject_title,
         description: ticket.description || '',
@@ -147,17 +147,17 @@ export const ticketService = {
         sites!inner(
           site_name
         ),
-        site_owners!inner(
-          owner_name
-        ),
         profiles!inner(
           id,
           name
         ),
-        companies(
+        companies:site_owner_company_id(
           company_name
         ),
-        company_contacts(
+        assigned_company:assigned_company_id(
+          company_name
+        ),
+        company_contacts:assigned_contact_id(
           contact_name
         )
       `)
@@ -171,14 +171,14 @@ export const ticketService = {
       id: data.id,
       ticketNumber: data.ticket_number,
       site: data.sites.site_name,
-      siteOwner: data.site_owners.owner_name,
+      siteOwnerCompany: data.companies?.company_name || '',
       type: data.ticket_type.toLowerCase() as 'job' | 'fault',
       priority: data.priority,
       dateRaised: data.date_raised,
       whoRaisedId: data.profiles.id,
       whoRaised: data.profiles.name,
       targetCompletionDate: data.target_completion_date,
-      companyToAssign: data.companies?.company_name || '',
+      companyToAssign: data.assigned_company?.company_name || '',
       companyContact: data.company_contacts?.contact_name || '',
       subject: data.subject_title,
       description: data.description || '',
@@ -190,21 +190,22 @@ export const ticketService = {
 
   async createTicket(ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
     // Get IDs for related entities
-    const [siteData, siteOwnerData, companyData, contactData] = await Promise.all([
+    const [siteData, companyData, contactData] = await Promise.all([
       supabase.from('sites').select('id').eq('site_name', ticket.site).single(),
-      supabase.from('site_owners').select('id').eq('owner_name', ticket.siteOwner).single(),
       ticket.companyToAssign ? supabase.from('companies').select('id').eq('company_name', ticket.companyToAssign).single() : null,
       ticket.companyContact ? supabase.from('company_contacts').select('id').eq('contact_name', ticket.companyContact).single() : null
     ]);
 
     if (!siteData?.data) throw new Error(`Site not found: ${ticket.site}`);
-    if (!siteOwnerData?.data) throw new Error(`Site owner not found: ${ticket.siteOwner}`);
+    if (!ticket.siteOwnerCompany) throw new Error('Site owner company is required');
+    const { data: ownerCompanyData, error: ownerCompanyError } = await supabase.from('companies').select('id').eq('company_name', ticket.siteOwnerCompany).single();
+    if (ownerCompanyError || !ownerCompanyData) throw new Error(`Site owner company not found: ${ticket.siteOwnerCompany}`);
 
     const { data, error } = await supabase
       .from('tickets')
       .insert([{
         site_id: siteData.data.id,
-        site_owner_id: siteOwnerData.data.id,
+        site_owner_company_id: ownerCompanyData.id,
         ticket_type: ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1),
         priority: ticket.priority,
         date_raised: ticket.dateRaised,
@@ -221,17 +222,17 @@ export const ticketService = {
         sites!inner(
           site_name
         ),
-        site_owners!inner(
-          owner_name
-        ),
         profiles!inner(
           id,
           name
         ),
-        companies(
+        companies:site_owner_company_id(
           company_name
         ),
-        company_contacts(
+        assigned_company:assigned_company_id(
+          company_name
+        ),
+        company_contacts:assigned_contact_id(
           contact_name
         )
       `)
@@ -244,14 +245,14 @@ export const ticketService = {
       id: data.id,
       ticketNumber: data.ticket_number,
       site: data.sites.site_name,
-      siteOwner: data.site_owners.owner_name,
+      siteOwnerCompany: data.companies?.company_name || '',
       type: data.ticket_type.toLowerCase() as 'job' | 'fault',
       priority: data.priority,
       dateRaised: data.date_raised,
       whoRaisedId: data.profiles.id,
       whoRaised: data.profiles.name,
       targetCompletionDate: data.target_completion_date,
-      companyToAssign: data.companies?.company_name || '',
+      companyToAssign: data.assigned_company?.company_name || '',
       companyContact: data.company_contacts?.contact_name || '',
       subject: data.subject_title,
       description: data.description || '',
@@ -270,10 +271,10 @@ export const ticketService = {
       updates.site_id = data.id;
     }
 
-    if (ticket.siteOwner) {
-      const { data, error } = await supabase.from('site_owners').select('id').eq('owner_name', ticket.siteOwner).single();
-      if (error) throw new Error(`Site owner not found: ${ticket.siteOwner}`);
-      updates.site_owner_id = data.id;
+    if (ticket.siteOwnerCompany) {
+      const { data, error } = await supabase.from('companies').select('id').eq('company_name', ticket.siteOwnerCompany).single();
+      if (error) throw new Error(`Site owner company not found: ${ticket.siteOwnerCompany}`);
+      updates.site_owner_company_id = data.id;
     }
 
     if (ticket.companyToAssign) {

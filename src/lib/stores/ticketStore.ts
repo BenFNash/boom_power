@@ -70,8 +70,8 @@ export const useTicketStore = create<TicketState>((set) => ({
         throw new Error('Site is required');
       }
 
-      if (!ticket.siteOwner) {
-        throw new Error('Site owner is required');
+      if (!ticket.siteOwnerCompany) {
+        throw new Error('Site owner company is required');
       }
 
       const newTicket = await ticketService.createTicket(ticket);
