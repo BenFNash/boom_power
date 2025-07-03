@@ -14,7 +14,7 @@ interface TemplateFormData {
   name: string;
   description: string;
   siteId: string;
-  siteOwnerId: string;
+  siteOwnerCompanyId: string;
   priority: string;
   assignedCompanyId: string;
   assignedContactId: string;
@@ -60,11 +60,9 @@ const JobScheduleManagement: React.FC = () => {
 
   const {
     sites,
-    siteOwners,
     companies,
     companyContacts,
     fetchSites,
-    fetchSiteOwners,
     fetchCompanies,
     fetchCompanyContacts
   } = useReferenceDataStore();
@@ -73,7 +71,7 @@ const JobScheduleManagement: React.FC = () => {
     name: '',
     description: '',
     siteId: '',
-    siteOwnerId: '',
+    siteOwnerCompanyId: '',
     priority: 'Medium',
     assignedCompanyId: '',
     assignedContactId: '',
@@ -99,7 +97,6 @@ const JobScheduleManagement: React.FC = () => {
         fetchJobSchedules(),
         fetchScheduledInstances(),
         fetchSites(),
-        fetchSiteOwners(),
         fetchCompanies(),
         fetchCompanyContacts()
       ]);
@@ -113,7 +110,7 @@ const JobScheduleManagement: React.FC = () => {
       name: '',
       description: '',
       siteId: '',
-      siteOwnerId: '',
+      siteOwnerCompanyId: '',
       priority: 'Medium',
       assignedCompanyId: '',
       assignedContactId: '',
@@ -130,7 +127,7 @@ const JobScheduleManagement: React.FC = () => {
       name: template.name,
       description: template.description || '',
       siteId: template.siteId,
-      siteOwnerId: template.siteOwnerId,
+      siteOwnerCompanyId: template.siteOwnerCompanyId,
       priority: template.priority,
       assignedCompanyId: template.assignedCompanyId,
       assignedContactId: template.assignedContactId,
@@ -145,9 +142,12 @@ const JobScheduleManagement: React.FC = () => {
     e.preventDefault();
     if (!user?.id) return;
 
+    const siteOwnerCompany = companies.find(c => c.id === templateForm.siteOwnerCompanyId);
+
     try {
       const templateData = {
         ...templateForm,
+        siteOwnerCompanyName: siteOwnerCompany?.companyName || '',
         ticketType: 'Job' as const, // Always set to 'Job'
         createdBy: user.id,
         active: true
@@ -218,16 +218,15 @@ const JobScheduleManagement: React.FC = () => {
 
     try {
       const nextDueDate = calculateNextDueDate(scheduleForm.startDate, scheduleForm.frequencyType, scheduleForm.frequencyValue);
-      
-      // Convert empty string to null for endDate to prevent database error
-      const scheduleData = {
+      const scheduleData: any = {
         ...scheduleForm,
-        endDate: scheduleForm.endDate === '' ? null : scheduleForm.endDate,
         nextDueDate: format(nextDueDate, 'yyyy-MM-dd'),
         createdBy: user.id,
         active: true
       };
-      
+      if (scheduleForm.endDate !== '') {
+        scheduleData.endDate = scheduleForm.endDate;
+      }
       if (editingSchedule) {
         await updateJobSchedule(editingSchedule.id, scheduleData);
         toast.success('Schedule updated successfully');
@@ -255,7 +254,7 @@ const JobScheduleManagement: React.FC = () => {
   };
 
   const filteredContacts = companyContacts.filter(
-    contact => contact.company_id === templateForm.assignedCompanyId
+    contact => contact.companyId === templateForm.assignedCompanyId
   );
 
   return (
@@ -303,13 +302,13 @@ const JobScheduleManagement: React.FC = () => {
 
       {activeSubTab === 'templates' && (
         <Card>
-          <Card.Header className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <Card.Title>Job Templates</Card.Title>
+          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <h2 className="card-title">Job Templates</h2>
             <Button onClick={handleCreateTemplate} leftIcon={<Plus className="h-4 w-4" />}>
               Create Template
             </Button>
-          </Card.Header>
-          <Card.Content>
+          </div>
+          <div className="card-content">
             {jobTemplates.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No job templates created yet. Create your first template to get started.
@@ -347,19 +346,19 @@ const JobScheduleManagement: React.FC = () => {
                 ))}
               </div>
             )}
-          </Card.Content>
+          </div>
         </Card>
       )}
 
       {activeSubTab === 'schedules' && (
         <Card>
-          <Card.Header className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <Card.Title>Job Schedules</Card.Title>
+          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <h2 className="card-title">Job Schedules</h2>
             <Button onClick={handleCreateSchedule} leftIcon={<Plus className="h-4 w-4" />}>
               Create Schedule
             </Button>
-          </Card.Header>
-          <Card.Content>
+          </div>
+          <div className="card-content">
             {jobSchedules.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No job schedules created yet. Create your first schedule to automate ticket generation.
@@ -404,16 +403,16 @@ const JobScheduleManagement: React.FC = () => {
                 ))}
               </div>
             )}
-          </Card.Content>
+          </div>
         </Card>
       )}
 
       {activeSubTab === 'instances' && (
         <Card>
-          <Card.Header>
-            <Card.Title>Generated Tickets</Card.Title>
-          </Card.Header>
-          <Card.Content>
+          <div className="card-header">
+            <h2 className="card-title">Generated Tickets</h2>
+          </div>
+          <div className="card-content">
             {scheduledInstances.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No scheduled tickets generated yet.
@@ -458,7 +457,7 @@ const JobScheduleManagement: React.FC = () => {
                 ))}
               </div>
             )}
-          </Card.Content>
+          </div>
         </Card>
       )}
 
@@ -501,23 +500,23 @@ const JobScheduleManagement: React.FC = () => {
                 <option value="">Select Site</option>
                 {sites.map((site) => (
                   <option key={site.id} value={site.id}>
-                    {site.site_name}
+                    {site.siteName}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Site Owner</label>
+              <label className="label">Site Owner Company</label>
               <select
                 className="input"
-                value={templateForm.siteOwnerId}
-                onChange={(e) => setTemplateForm({ ...templateForm, siteOwnerId: e.target.value })}
+                value={templateForm.siteOwnerCompanyId}
+                onChange={(e) => setTemplateForm({ ...templateForm, siteOwnerCompanyId: e.target.value })}
                 required
               >
-                <option value="">Select Site Owner</option>
-                {siteOwners.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.owner_name}
+                <option value="">Select Company</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.companyName}
                   </option>
                 ))}
               </select>
@@ -558,7 +557,7 @@ const JobScheduleManagement: React.FC = () => {
                 <option value="">Select Company</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
-                    {company.company_name}
+                    {company.companyName}
                   </option>
                 ))}
               </select>
@@ -575,7 +574,7 @@ const JobScheduleManagement: React.FC = () => {
                 <option value="">Select Contact</option>
                 {filteredContacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
-                    {contact.contact_name}
+                    {contact.contactName}
                   </option>
                 ))}
               </select>

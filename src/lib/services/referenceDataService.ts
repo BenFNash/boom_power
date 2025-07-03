@@ -21,7 +21,7 @@ export const referenceDataService = {
     })) as Company[];
   },
 
-  async createCompany(company: Omit<Company, 'id' | 'created_at'>) {
+  async createCompany(company: Omit<Company, 'id' | 'createdAt'>) {
     const { data, error } = await supabase
       .from('companies')
       .insert([
@@ -43,6 +43,16 @@ export const referenceDataService = {
   },
 
   async updateCompany(id: string, company: Partial<Company>) {
+    // If we're archiving a company, we need to archive all associated records
+    if (company.active === false) {
+      // Start a transaction to archive all related records
+      const { error: transactionError } = await supabase.rpc('archive_company_cascade', {
+        target_company_id: id
+      });
+
+      if (transactionError) throw transactionError;
+    }
+
     const { data, error } = await supabase
       .from('companies')
       .update({
@@ -88,7 +98,7 @@ export const referenceDataService = {
     })) as Site[];
   },
 
-  async createSite(site: Omit<Site, 'id' | 'created_at'>) {
+  async createSite(site: Omit<Site, 'id' | 'createdAt'>) {
     const { data, error } = await supabase
       .from('sites')
       .insert([
@@ -175,7 +185,7 @@ export const referenceDataService = {
   },
 
   async createCompanyContact(
-    contact: Omit<CompanyContact, 'id' | 'created_at' | 'company_name'>
+    contact: Omit<CompanyContact, 'id' | 'createdAt' | 'companyName'>
   ) {
     const { data, error } = await supabase
       .from('company_contacts')

@@ -9,8 +9,14 @@ export const jobScheduleService = {
       .select(`
         *,
         sites!inner(site_name),
-        site_owners!inner(owner_name),
-        companies!inner(company_name),
+        site_owner_company:companies!site_owner_company_id(
+          id,
+          company_name
+        ),
+        assigned_company:companies!assigned_company_id(
+          id,
+          company_name
+        ),
         company_contacts!inner(contact_name)
       `);
     
@@ -28,12 +34,12 @@ export const jobScheduleService = {
       description: template.description,
       siteId: template.site_id,
       siteName: template.sites.site_name,
-      siteOwnerId: template.site_owner_id,
-      siteOwnerName: template.site_owners.owner_name,
+      siteOwnerCompanyId: template.site_owner_company_id,
+      siteOwnerCompanyName: template.site_owner_company?.company_name,
       ticketType: template.ticket_type,
       priority: template.priority,
       assignedCompanyId: template.assigned_company_id,
-      assignedCompanyName: template.companies.company_name,
+      assignedCompanyName: template.assigned_company?.company_name,
       assignedContactId: template.assigned_contact_id,
       assignedContactName: template.company_contacts.contact_name,
       subjectTitle: template.subject_title,
@@ -46,14 +52,14 @@ export const jobScheduleService = {
     })) as JobTemplate[];
   },
 
-  async createJobTemplate(template: Omit<JobTemplate, 'id' | 'createdAt' | 'updatedAt' | 'siteName' | 'siteOwnerName' | 'assignedCompanyName' | 'assignedContactName'>) {
+  async createJobTemplate(template: Omit<JobTemplate, 'id' | 'createdAt' | 'updatedAt' | 'siteName' | 'siteOwnerCompanyName' | 'assignedCompanyName' | 'assignedContactName'>) {
     const { data, error } = await supabase
       .from('job_templates')
       .insert([{
         name: template.name,
         description: template.description,
         site_id: template.siteId,
-        site_owner_id: template.siteOwnerId,
+        site_owner_company_id: template.siteOwnerCompanyId,
         ticket_type: template.ticketType,
         priority: template.priority,
         assigned_company_id: template.assignedCompanyId,
@@ -67,8 +73,14 @@ export const jobScheduleService = {
       .select(`
         *,
         sites!inner(site_name),
-        site_owners!inner(owner_name),
-        companies!inner(company_name),
+        site_owner_company:companies!site_owner_company_id(
+          id,
+          company_name
+        ),
+        assigned_company:companies!assigned_company_id(
+          id,
+          company_name
+        ),
         company_contacts!inner(contact_name)
       `)
       .single();
@@ -81,12 +93,12 @@ export const jobScheduleService = {
       description: data.description,
       siteId: data.site_id,
       siteName: data.sites.site_name,
-      siteOwnerId: data.site_owner_id,
-      siteOwnerName: data.site_owners.owner_name,
+      siteOwnerCompanyId: data.site_owner_company_id,
+      siteOwnerCompanyName: data.site_owner_company?.company_name,
       ticketType: data.ticket_type,
       priority: data.priority,
       assignedCompanyId: data.assigned_company_id,
-      assignedCompanyName: data.companies.company_name,
+      assignedCompanyName: data.assigned_company?.company_name,
       assignedContactId: data.assigned_contact_id,
       assignedContactName: data.company_contacts.contact_name,
       subjectTitle: data.subject_title,
@@ -105,7 +117,7 @@ export const jobScheduleService = {
     if (template.name) updates.name = template.name;
     if (template.description !== undefined) updates.description = template.description;
     if (template.siteId) updates.site_id = template.siteId;
-    if (template.siteOwnerId) updates.site_owner_id = template.siteOwnerId;
+    if (template.siteOwnerCompanyId) updates.site_owner_company_id = template.siteOwnerCompanyId;
     if (template.ticketType) updates.ticket_type = template.ticketType;
     if (template.priority) updates.priority = template.priority;
     if (template.assignedCompanyId) updates.assigned_company_id = template.assignedCompanyId;
@@ -122,8 +134,14 @@ export const jobScheduleService = {
       .select(`
         *,
         sites!inner(site_name),
-        site_owners!inner(owner_name),
-        companies!inner(company_name),
+        site_owner_company:companies!site_owner_company_id(
+          id,
+          company_name
+        ),
+        assigned_company:companies!assigned_company_id(
+          id,
+          company_name
+        ),
         company_contacts!inner(contact_name)
       `)
       .single();
@@ -136,12 +154,12 @@ export const jobScheduleService = {
       description: data.description,
       siteId: data.site_id,
       siteName: data.sites.site_name,
-      siteOwnerId: data.site_owner_id,
-      siteOwnerName: data.site_owners.owner_name,
+      siteOwnerCompanyId: data.site_owner_company_id,
+      siteOwnerCompanyName: data.site_owner_company?.company_name,
       ticketType: data.ticket_type,
       priority: data.priority,
       assignedCompanyId: data.assigned_company_id,
-      assignedCompanyName: data.companies.company_name,
+      assignedCompanyName: data.assigned_company?.company_name,
       assignedContactId: data.assigned_contact_id,
       assignedContactName: data.company_contacts.contact_name,
       subjectTitle: data.subject_title,

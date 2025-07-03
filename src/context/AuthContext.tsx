@@ -63,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               roles(role_name)
             `)
             .eq('user_id', session.user.id);
-          console.log(roleData)
 
           if (roleError) throw roleError;
 

@@ -28,13 +28,13 @@ interface FormData {
 const ReferenceDataPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    'companies' | 'sites' | 'contacts'
-  >('companies');
+  const [activeTab, setActiveTab] = useState<'companies' | 'sites' | 'contacts'>('companies');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [companyToArchive, setCompanyToArchive] = useState<string | null>(null);
 
   const {
     companies,
@@ -119,15 +119,18 @@ const ReferenceDataPage: React.FC = () => {
   };
 
   const handleArchive = async (id: string) => {
+    if (activeTab === 'companies') {
+      setCompanyToArchive(id);
+      setIsWarningModalOpen(true);
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to archive this item?')) {
       return;
     }
 
     try {
       switch (activeTab) {
-        case 'companies':
-          await updateCompany(id, { active: false });
-          break;
         case 'sites':
           await updateSite(id, { active: false });
           break;
@@ -139,6 +142,33 @@ const ReferenceDataPage: React.FC = () => {
     } catch (error) {
       console.error('Archive error:', error);
       toast.error('Failed to archive item');
+    }
+  };
+
+  const handleConfirmCompanyArchive = async () => {
+    if (!companyToArchive) return;
+
+    try {
+      await updateCompany(companyToArchive, { active: false });
+      toast.success('Company and all associated records archived successfully');
+      setIsWarningModalOpen(false);
+      setCompanyToArchive(null);
+      
+      // Refresh the current data to reflect the changes
+      switch (activeTab) {
+        case 'companies':
+          await fetchCompanies(showInactive);
+          break;
+        case 'sites':
+          await fetchSites(showInactive);
+          break;
+        case 'contacts':
+          await fetchCompanyContacts(showInactive);
+          break;
+      }
+    } catch (error) {
+      console.error('Archive error:', error);
+      toast.error('Failed to archive company');
     }
   };
 
@@ -200,6 +230,7 @@ const ReferenceDataPage: React.FC = () => {
               companyId: formData.companyId!,
               contactName: formData.contactName!,
               contactEmail: formData.contactEmail!,
+              active: true,
             });
           }
           break;
@@ -683,6 +714,59 @@ const ReferenceDataPage: React.FC = () => {
             <Button type="submit">{editingId ? 'Update' : 'Create'}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={isWarningModalOpen}
+        onClose={() => {
+          setIsWarningModalOpen(false);
+          setCompanyToArchive(null);
+        }}
+        title="Archive Company Warning"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-6 w-6 text-amber-500 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Warning: This action will affect multiple records
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                When you archive a company, the following associated records will also be archived:
+              </p>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                <li>All sites owned by this company will be archived</li>
+                <li>All company contacts associated with this company will be archived</li>
+                <li>All open/assigned tickets where this company is the site owner or assigned company will be cancelled</li>
+                <li>All pending/in-progress jobs assigned to this company will be put on hold</li>
+                <li>All job templates where this company is the site owner or assigned company will be archived</li>
+                <li>All related job schedules and scheduled instances will be archived/cancelled</li>
+              </ul>
+              <p className="text-gray-600 dark:text-gray-400 mt-3">
+                This action cannot be easily undone. Are you sure you want to proceed?
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsWarningModalOpen(false);
+                setCompanyToArchive(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleConfirmCompanyArchive}
+            >
+              Archive Company
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
