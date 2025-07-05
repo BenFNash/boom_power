@@ -21,16 +21,11 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      
-      - name: Link to Supabase Project
-        run: |
-          echo "Linking to Supabase project..."
-          supabase link --project-ref ${PROJECT_ID}
 
       - name: Deploy Database Migrations
         run: |
           echo "Pushing database migrations to Supabase..."
-          supabase db push
+          supabase db push --project-url postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.dlwigedxcswkdyeiqshc.supabase.co:5432/postgres
           
       - name: Verify Migration Deployment
         run: |
