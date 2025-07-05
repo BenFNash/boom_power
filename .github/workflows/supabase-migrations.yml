@@ -25,7 +25,7 @@ jobs:
       - name: Link to Supabase Project
         run: |
           echo "Linking to Supabase project..."
-          supabase link --project-ref $PROJECT_ID
+          supabase link --project-ref ${PROJECT_ID}
 
       - name: Deploy Database Migrations
         run: |
@@ -37,7 +37,7 @@ jobs:
           echo "Verifying migration deployment..."
           supabase migration list
 
-      - run: supabase functions deploy --project-ref $PROJECT_ID       
+      - run: supabase functions deploy --project-ref ${PROJECT_ID}       
           
       - name: Deployment Summary
         if: always()
