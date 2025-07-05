@@ -25,7 +25,7 @@ jobs:
       - name: Deploy Database Migrations
         run: |
           echo "Pushing database migrations to Supabase..."
-          supabase db push
+          supabase db push --project-ref $PROJECT_ID
           
       - name: Verify Migration Deployment
         run: |
