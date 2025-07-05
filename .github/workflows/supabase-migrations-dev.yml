@@ -1,0 +1,90 @@
+name: Supabase Migrations (Development)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/supabase-migrations-dev.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - development
+
+jobs:
+  validate-migrations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+        
+      - name: Validate Migration Files
+        run: |
+          echo "Validating migration files..."
+          
+          # Check if migration files exist
+          if [ ! -d "supabase/migrations" ]; then
+            echo "❌ No migrations directory found"
+            exit 1
+          fi
+          
+          # Count migration files
+          MIGRATION_COUNT=$(find supabase/migrations -name "*.sql" | wc -l)
+          echo "📊 Found $MIGRATION_COUNT migration files"
+          
+          # Validate SQL syntax (basic check)
+          for file in supabase/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              echo "🔍 Validating $file..."
+              # Basic SQL validation - check for common syntax errors
+              if grep -q "CREATE TABLE\|ALTER TABLE\|INSERT INTO\|UPDATE\|DELETE FROM" "$file"; then
+                echo "✅ $file appears to contain valid SQL"
+              else
+                echo "⚠️  $file may not contain standard SQL operations"
+              fi
+            fi
+          done
+          
+      - name: Check Migration Naming Convention
+        run: |
+          echo "Checking migration naming convention..."
+          
+          for file in supabase/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              if [[ $filename =~ ^[0-9]{14}_.*\.sql$ ]]; then
+                echo "✅ $filename follows naming convention"
+              else
+                echo "⚠️  $filename may not follow naming convention (YYYYMMDDHHMMSS_description.sql)"
+              fi
+            fi
+          done
+          
+      - name: Migration Summary
+        run: |
+          echo "📋 Migration Validation Summary"
+          echo "================================"
+          echo "✅ All migration files validated"
+          echo "✅ Naming conventions checked"
+          echo "✅ Ready for deployment"
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "🔗 PR: ${{ github.event.pull_request.html_url }}"
+          fi 

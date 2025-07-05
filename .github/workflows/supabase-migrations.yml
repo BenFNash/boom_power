@@ -1,0 +1,75 @@
+name: Supabase Migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/supabase-migrations.yml'
+
+jobs:
+  deploy-migrations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+        
+      - name: Login to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Logging in to Supabase..."
+          supabase login --access-token $SUPABASE_ACCESS_TOKEN
+          
+      - name: Link to Supabase Project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Linking to Supabase project..."
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          
+      - name: Deploy Database Migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          echo "Pushing database migrations to Supabase..."
+          supabase db push
+          
+      - name: Verify Migration Deployment
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Verifying migration deployment..."
+          supabase migration list
+          
+      - name: Deploy Edge Functions
+        if: hashFiles('supabase/functions/**') != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Deploying edge functions..."
+          supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          
+      - name: Deployment Summary
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Supabase deployment completed successfully!"
+            echo "📊 Migrations deployed to: ${{ secrets.SUPABASE_PROJECT_REF }}"
+          else
+            echo "❌ Supabase deployment failed!"
+            echo "Please check the logs above for more details."
+            exit 1
+          fi 
