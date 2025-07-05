@@ -248,10 +248,10 @@ const TicketDetailPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Site Owner</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Site Owner Company</p>
                   <p className="mt-1 flex items-center font-medium text-gray-900 dark:text-gray-100">
                     <Building className="mr-1.5 h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
-                    {ticket.siteOwner}
+                    {ticket.siteOwnerCompany}
                   </p>
                 </div>
                 

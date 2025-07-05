@@ -27,6 +27,7 @@ export interface Ticket {
   ticketNumber: string;
   site: string;
   siteOwnerCompany: string;
+  siteOwnerCompanyId?: string;
   type: TicketType;
   priority: string;
   dateRaised: string;
@@ -34,7 +35,9 @@ export interface Ticket {
   whoRaised: string;
   targetCompletionDate: string;
   companyToAssign: string;
+  companyToAssignId?: string;
   companyContact: string;
+  companyContactId?: string;
   subject: string;
   description: string;
   status: TicketStatus;

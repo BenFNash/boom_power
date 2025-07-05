@@ -54,7 +54,7 @@ export const ticketService = {
         ),
         profiles!inner(
           id,
-          name
+          email
         ),
         companies:site_owner_company_id(
           company_name
@@ -125,7 +125,7 @@ export const ticketService = {
         priority: ticket.priority,
         dateRaised: ticket.date_raised,
         whoRaisedId: ticket.who_raised_id,
-        whoRaised: ticket.profiles.name,
+        whoRaised: ticket.profiles.email,
         targetCompletionDate: ticket.target_completion_date,
         companyToAssign: ticket.assigned_company?.company_name || '',
         companyContact: ticket.company_contacts?.contact_name || '',
@@ -149,7 +149,7 @@ export const ticketService = {
         ),
         profiles!inner(
           id,
-          name
+          email
         ),
         companies:site_owner_company_id(
           company_name
@@ -176,7 +176,7 @@ export const ticketService = {
       priority: data.priority,
       dateRaised: data.date_raised,
       whoRaisedId: data.profiles.id,
-      whoRaised: data.profiles.name,
+      whoRaised: data.profiles.email,
       targetCompletionDate: data.target_completion_date,
       companyToAssign: data.assigned_company?.company_name || '',
       companyContact: data.company_contacts?.contact_name || '',
@@ -189,30 +189,38 @@ export const ticketService = {
   },
 
   async createTicket(ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
-    // Get IDs for related entities
-    const [siteData, companyData, contactData] = await Promise.all([
-      supabase.from('sites').select('id').eq('site_name', ticket.site).single(),
-      ticket.companyToAssign ? supabase.from('companies').select('id').eq('company_name', ticket.companyToAssign).single() : null,
-      ticket.companyContact ? supabase.from('company_contacts').select('id').eq('contact_name', ticket.companyContact).single() : null
-    ]);
+    // Get site ID
+    const { data: siteData, error: siteError } = await supabase.from('sites').select('id').eq('site_name', ticket.site).single();
+    if (siteError || !siteData) throw new Error(`Site not found: ${ticket.site}`);
 
-    if (!siteData?.data) throw new Error(`Site not found: ${ticket.site}`);
-    if (!ticket.siteOwnerCompany) throw new Error('Site owner company is required');
-    const { data: ownerCompanyData, error: ownerCompanyError } = await supabase.from('companies').select('id').eq('company_name', ticket.siteOwnerCompany).single();
-    if (ownerCompanyError || !ownerCompanyData) throw new Error(`Site owner company not found: ${ticket.siteOwnerCompany}`);
+    // Use provided IDs or fall back to name lookups for backward compatibility
+    let siteOwnerCompanyId = ticket.siteOwnerCompanyId;
+    let assignedCompanyId = ticket.companyToAssignId;
+
+    if (!siteOwnerCompanyId && ticket.siteOwnerCompany) {
+      const { data: ownerCompanyData, error: ownerCompanyError } = await supabase.from('companies').select('id').eq('company_name', ticket.siteOwnerCompany).single();
+      if (ownerCompanyError || !ownerCompanyData) throw new Error(`Site owner company not found: ${ticket.siteOwnerCompany}`);
+      siteOwnerCompanyId = ownerCompanyData.id;
+    }
+
+    if (!assignedCompanyId && ticket.companyToAssign) {
+      const { data: companyData, error: companyError } = await supabase.from('companies').select('id').eq('company_name', ticket.companyToAssign).single();
+      if (companyError || !companyData) throw new Error(`Company not found: ${ticket.companyToAssign}`);
+      assignedCompanyId = companyData.id;
+    }
 
     const { data, error } = await supabase
       .from('tickets')
       .insert([{
-        site_id: siteData.data.id,
-        site_owner_company_id: ownerCompanyData.id,
+        site_id: siteData.id,
+        site_owner_company_id: siteOwnerCompanyId,
         ticket_type: ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1),
         priority: ticket.priority,
         date_raised: ticket.dateRaised,
         who_raised_id: ticket.whoRaisedId,
         target_completion_date: ticket.targetCompletionDate,
-        assigned_company_id: companyData?.data?.id || null,
-        assigned_contact_id: contactData?.data?.id || null,
+        assigned_company_id: assignedCompanyId || null,
+        assigned_contact_id: ticket.companyContactId || null,
         subject_title: ticket.subject,
         description: ticket.description,
         status: ticket.status || 'open'
@@ -271,19 +279,25 @@ export const ticketService = {
       updates.site_id = data.id;
     }
 
-    if (ticket.siteOwnerCompany) {
+    if (ticket.siteOwnerCompanyId) {
+      updates.site_owner_company_id = ticket.siteOwnerCompanyId;
+    } else if (ticket.siteOwnerCompany) {
       const { data, error } = await supabase.from('companies').select('id').eq('company_name', ticket.siteOwnerCompany).single();
       if (error) throw new Error(`Site owner company not found: ${ticket.siteOwnerCompany}`);
       updates.site_owner_company_id = data.id;
     }
 
-    if (ticket.companyToAssign) {
+    if (ticket.companyToAssignId) {
+      updates.assigned_company_id = ticket.companyToAssignId;
+    } else if (ticket.companyToAssign) {
       const { data, error } = await supabase.from('companies').select('id').eq('company_name', ticket.companyToAssign).single();
       if (error) throw new Error(`Company not found: ${ticket.companyToAssign}`);
       updates.assigned_company_id = data.id;
     }
 
-    if (ticket.companyContact) {
+    if (ticket.companyContactId) {
+      updates.assigned_contact_id = ticket.companyContactId;
+    } else if (ticket.companyContact) {
       const { data, error } = await supabase.from('company_contacts').select('id').eq('contact_name', ticket.companyContact).single();
       if (error) throw new Error(`Contact not found: ${ticket.companyContact}`);
       updates.assigned_contact_id = data.id;
