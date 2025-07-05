@@ -25,7 +25,7 @@ jobs:
       - name: Link to Supabase Project
         run: |
           echo "Linking to Supabase project..."
-          supabase link --project-ref $PROJECT_IDs
+          supabase link --project-ref $PROJECT_ID
 
       - name: Deploy Database Migrations
         run: |
