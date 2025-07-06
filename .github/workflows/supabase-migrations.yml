@@ -23,7 +23,10 @@ jobs:
           version: latest
       
       - name: link supabase project
-        run: supabase link --project-ref $PROJECT_ID --password $SUPABASE_DB_PASSWORD
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase link --project-ref $PROJECT_REF --password $SUPABASE_DB_PASSWORD
 
       - name: Deploy Database Migrations
         run: |
@@ -34,7 +37,6 @@ jobs:
         run: |
           echo "Verifying migration deployment..."
           supabase migration list
-
       - run: supabase functions deploy --project-ref ${PROJECT_ID}       
           
       - name: Deployment Summary
