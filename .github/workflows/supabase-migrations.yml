@@ -28,7 +28,6 @@ jobs:
         run: supabase link --project-ref $PROJECT_REF
 
       - name: Deploy Database Migrations
-        env:
         run: |
           echo "Pushing database migrations to Supabase..."
           supabase db push
