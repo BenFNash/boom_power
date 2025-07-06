@@ -25,7 +25,7 @@ jobs:
       - name: Deploy Database Migrations
         run: |
           echo "Pushing database migrations to Supabase..."
-          supabase db push --project-url postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.dlwigedxcswkdyeiqshc.supabase.co:5432/postgres
+          supabase db push --project-url postgresql://postgres:$SUPABASE_DB_PASSWORD@db.$PROJECT_ID.supabase.co:5432/postgres
           
       - name: Verify Migration Deployment
         run: |
