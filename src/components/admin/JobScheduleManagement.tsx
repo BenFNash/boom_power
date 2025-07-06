@@ -302,13 +302,13 @@ const JobScheduleManagement: React.FC = () => {
 
       {activeSubTab === 'templates' && (
         <Card>
-          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-6">
             <h2 className="card-title">Job Templates</h2>
             <Button onClick={handleCreateTemplate} leftIcon={<Plus className="h-4 w-4" />}>
               Create Template
             </Button>
           </div>
-          <div className="card-content">
+          <div className="card-content p-6">
             {jobTemplates.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No job templates created yet. Create your first template to get started.
@@ -352,13 +352,13 @@ const JobScheduleManagement: React.FC = () => {
 
       {activeSubTab === 'schedules' && (
         <Card>
-          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div className="card-header flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-6">
             <h2 className="card-title">Job Schedules</h2>
             <Button onClick={handleCreateSchedule} leftIcon={<Plus className="h-4 w-4" />}>
               Create Schedule
             </Button>
           </div>
-          <div className="card-content">
+          <div className="card-content p-6">
             {jobSchedules.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No job schedules created yet. Create your first schedule to automate ticket generation.
@@ -409,10 +409,10 @@ const JobScheduleManagement: React.FC = () => {
 
       {activeSubTab === 'instances' && (
         <Card>
-          <div className="card-header">
+          <div className="card-header p-6">
             <h2 className="card-title">Generated Tickets</h2>
           </div>
-          <div className="card-content">
+          <div className="card-content p-6">
             {scheduledInstances.length === 0 ? (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 No scheduled tickets generated yet.
