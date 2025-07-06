@@ -24,11 +24,12 @@ jobs:
       
       - name: link supabase project
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: supabase link --project-ref $PROJECT_REF --password $SUPABASE_DB_PASSWORD
+        run: supabase link --project-ref $PROJECT_REF
 
       - name: Deploy Database Migrations
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           echo "Pushing database migrations to Supabase..."
           supabase db push
