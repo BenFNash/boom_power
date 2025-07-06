@@ -25,7 +25,7 @@ jobs:
       - name: Deploy Database Migrations
         run: |
           echo "Pushing database migrations to Supabase..."
-          supabase db push --db-url $SUPABASE_DB_URL
+          supabase db push --db-url "$SUPABASE_DB_URL"
           
       - name: Verify Migration Deployment
         run: |
