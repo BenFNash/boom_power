@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Paperclip, Send, File, UploadCloud } from 'lucide-react';
+import { Paperclip, Send, File, UploadCloud, X } from 'lucide-react';
 import { Communication, User } from '../../types';
 import Button from '../common/Button';
+import { attachmentService } from '../../lib/services/attachmentService';
 
 interface CommunicationThreadProps {
   communications: Communication[];
@@ -30,38 +31,41 @@ const CommunicationThread: React.FC<CommunicationThreadProps> = ({
     }
   };
 
-  const simulateFileUpload = () => {
-    if (files.length === 0) return Promise.resolve();
+  const uploadFiles = async (communicationId: string) => {
+    if (files.length === 0) return;
     
     setIsUploading(true);
     setUploadProgress(0);
     
-    return new Promise<void>((resolve) => {
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          const newProgress = prev + 10;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsUploading(false);
-              resolve();
-            }, 500);
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 300);
-    });
+    try {
+      // Upload files in batches to show progress
+      const batchSize = 1;
+      const totalFiles = files.length;
+      let uploadedCount = 0;
+      
+      for (let i = 0; i < totalFiles; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        await attachmentService.uploadCommunicationAttachments(batch, ticketId, communicationId, currentUser.id);
+        uploadedCount += batch.length;
+        setUploadProgress((uploadedCount / totalFiles) * 100);
+      }
+      
+      // Clear files after successful upload
+      setFiles([]);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      throw error;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleSendMessage = async () => {
     if (!message.trim() && files.length === 0) return;
     
     try {
-      if (files.length > 0) {
-        await simulateFileUpload();
-      }
-      
+      // Send message first to get communication ID
       await onSendMessage(message, files);
       setMessage('');
       setFiles([]);

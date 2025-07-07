@@ -19,7 +19,7 @@ interface TicketState {
   error: string | null;
   fetchTickets: () => Promise<void>;
   fetchTicketCounts: () => Promise<void>;
-  createTicket: (ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  createTicket: (ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>) => Promise<Ticket>;
   updateTicket: (id: string, ticket: Partial<Ticket>) => Promise<void>;
 }
 
@@ -85,6 +85,7 @@ export const useTicketStore = create<TicketState>((set) => ({
       // Refresh ticket counts
       await ticketService.getTicketCounts();
 
+      return newTicket;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while creating the ticket';
       set({ 

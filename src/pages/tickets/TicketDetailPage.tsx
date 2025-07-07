@@ -25,6 +25,8 @@ import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { ticketService } from '../../lib/services/ticketService';
 import { useCommunicationStore } from '../../lib/stores/communicationStore';
+import { attachmentService } from '../../lib/services/attachmentService';
+import { Attachment } from '../../types';
 import toast from 'react-hot-toast';
 
 const TicketDetailPage: React.FC = () => {
@@ -32,6 +34,7 @@ const TicketDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -60,8 +63,12 @@ const TicketDetailPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const ticketData = await ticketService.getTicketById(id);
+        const [ticketData, ticketAttachments] = await Promise.all([
+          ticketService.getTicketById(id),
+          attachmentService.getTicketAttachments(id)
+        ]);
         setTicket(ticketData);
+        setAttachments(ticketAttachments);
       } catch (err) {
         console.error('Error loading ticket:', err);
         setError(err instanceof Error ? err.message : 'Failed to load ticket');
@@ -85,7 +92,8 @@ const TicketDetailPage: React.FC = () => {
     try {
       setSendingMessage(true);
       
-      await createCommunication({
+      // Create communication first
+      const newCommunication = await createCommunication({
         ticketId: id,
         userId: user.id,
         message,
@@ -96,6 +104,13 @@ const TicketDetailPage: React.FC = () => {
         },
         attachments: []
       });
+      
+      // Upload files if any
+      if (files.length > 0) {
+        await attachmentService.uploadCommunicationAttachments(files, id, newCommunication.id, user.id);
+        // Refresh communications to show the uploaded files
+        await fetchCommunications(id);
+      }
       
       toast.success('Message sent successfully');
     } catch (error) {
@@ -131,12 +146,23 @@ const TicketDetailPage: React.FC = () => {
       setTicket(updatedTicket);
       setIsEditModalOpen(false);
       toast.success('Ticket updated successfully');
+      return updatedTicket;
     } catch (error) {
       console.error('Error updating ticket:', error);
       toast.error('Failed to update ticket. Please try again.');
       throw error;
     } finally {
       setUpdatingTicket(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: Attachment) => {
+    try {
+      await attachmentService.downloadAttachment(attachment);
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      toast.error('Failed to download attachment. Please try again.');
     }
   };
 
@@ -316,13 +342,15 @@ const TicketDetailPage: React.FC = () => {
           <div className="mt-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Communications</h2>
             <Card className="h-[600px] overflow-hidden">
-              <CommunicationThread
-                communications={communications}
-                currentUser={user}
-                ticketId={ticket.id}
-                onSendMessage={handleSendMessage}
-                isLoading={sendingMessage}
-              />
+              {user && (
+                <CommunicationThread
+                  communications={communications}
+                  currentUser={user}
+                  ticketId={ticket.id}
+                  onSendMessage={handleSendMessage}
+                  isLoading={sendingMessage}
+                />
+              )}
             </Card>
           </div>
         </div>
@@ -340,7 +368,7 @@ const TicketDetailPage: React.FC = () => {
                   <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light z-10"></div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Created</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {format(new Date(ticket.createdAt), 'PPp')} by {ticket.whoRaised}
+                    {ticket.createdAt ? format(new Date(ticket.createdAt), 'PPp') : 'Unknown date'} by {ticket.whoRaised}
                   </p>
                 </div>
                 {communications.map((comm) => (
@@ -348,7 +376,7 @@ const TicketDetailPage: React.FC = () => {
                     <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-primary dark:bg-primary-light z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Comment Added</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {format(new Date(comm.createdAt), 'PPp')} by {comm.user.firstName} {comm.user.lastName}
+                      {comm.createdAt ? format(new Date(comm.createdAt), 'PPp') : 'Unknown date'} by {comm.user.firstName} {comm.user.lastName}
                     </p>
                   </div>
                 ))}
@@ -357,7 +385,7 @@ const TicketDetailPage: React.FC = () => {
                     <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-success z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Closed</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {format(new Date(ticket.updatedAt), 'PPp')}
+                      {ticket.updatedAt ? format(new Date(ticket.updatedAt), 'PPp') : 'Unknown date'}
                     </p>
                   </div>
                 )}
@@ -366,7 +394,7 @@ const TicketDetailPage: React.FC = () => {
                     <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-error z-10"></div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ticket Cancelled</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {format(new Date(ticket.updatedAt), 'PPp')}
+                      {ticket.updatedAt ? format(new Date(ticket.updatedAt), 'PPp') : 'Unknown date'}
                     </p>
                   </div>
                 )}
@@ -381,30 +409,75 @@ const TicketDetailPage: React.FC = () => {
             
             <Card.Content>
               <div className="space-y-3">
-                {communications.flatMap((comm) => 
-                  comm.attachments.map((attachment) => (
-                    <a
-                      key={attachment.id}
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center rounded-md border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light">
-                        <File className="h-5 w-5" />
+                {/* Ticket-level attachments */}
+                {attachments.length > 0 && (
+                  <>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Ticket Attachments</h4>
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center rounded-md border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light">
+                          <File className="h-5 w-5" />
+                        </div>
+                        <div className="ml-3 flex-1 overflow-hidden">
+                          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{attachment.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {(attachment.size / 1024 / 1024).toFixed(2)} MB • 
+                            {attachment.createdAt ? format(new Date(attachment.createdAt), 'PP') : 'Unknown date'}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<Download size={14} />}
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          className="ml-2"
+                        >
+                          Download
+                        </Button>
                       </div>
-                      <div className="ml-3 flex-1 overflow-hidden">
-                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{attachment.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {(attachment.size / 1024 / 1024).toFixed(2)} MB • 
-                          {format(new Date(attachment.createdAt), 'PP')}
-                        </p>
-                      </div>
-                    </a>
-                  ))
+                    ))}
+                  </>
+                )}
+
+                {/* Communication attachments */}
+                {communications.flatMap((comm) => comm.attachments || []).length > 0 && (
+                  <>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Communication Attachments</h4>
+                    {communications.flatMap((comm) => 
+                      (comm.attachments || []).map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center rounded-md border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light">
+                            <File className="h-5 w-5" />
+                          </div>
+                          <div className="ml-3 flex-1 overflow-hidden">
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{attachment.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {(attachment.size / 1024 / 1024).toFixed(2)} MB • 
+                              {attachment.createdAt ? format(new Date(attachment.createdAt), 'PP') : 'Unknown date'}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<Download size={14} />}
+                            onClick={() => handleDownloadAttachment(attachment)}
+                            className="ml-2"
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </>
                 )}
                 
-                {communications.flatMap((comm) => comm.attachments).length === 0 && (
+                {attachments.length === 0 && communications.flatMap((comm) => comm.attachments || []).length === 0 && (
                   <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     No documents attached to this ticket yet
                   </div>
