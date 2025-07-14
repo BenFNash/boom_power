@@ -17,13 +17,14 @@ interface TicketState {
   ticketCounts: TicketCounts;
   isLoading: boolean;
   error: string | null;
-  fetchTickets: () => Promise<void>;
+  fetchTickets: (filters?: Record<string, string>, searchQuery?: string, page?: number, pageSize?: number) => Promise<void>;
   fetchTicketCounts: () => Promise<void>;
   createTicket: (ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateTicket: (id: string, ticket: Partial<Ticket>) => Promise<void>;
+  getTicketById: (id: string) => Promise<Ticket>;
 }
 
-export const useTicketStore = create<TicketState>((set) => ({
+export const useTicketStore = create<TicketState>((set, get) => ({
   tickets: [],
   ticketCounts: {
     total: 0,
@@ -37,10 +38,10 @@ export const useTicketStore = create<TicketState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchTickets: async () => {
+  fetchTickets: async (filters, searchQuery, page, pageSize) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await ticketService.getTickets();
+      const response = await ticketService.getTickets(filters, searchQuery, page, pageSize);
       set({ tickets: response.data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false, tickets: [] });
@@ -115,6 +116,19 @@ export const useTicketStore = create<TicketState>((set) => ({
         isLoading: false, 
         error: errorMessage 
       });
+      throw error;
+    }
+  },
+
+  getTicketById: async (id: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const ticket = await ticketService.getTicketById(id);
+      set({ isLoading: false, error: null });
+      return ticket;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while fetching the ticket';
+      set({ isLoading: false, error: errorMessage });
       throw error;
     }
   }
