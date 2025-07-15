@@ -51,7 +51,6 @@ const TicketsPage: React.FC = () => {
         ITEMS_PER_PAGE
       );
       
-      console.log(response.data)
       setTickets(response.data);
       setTotalCount(response.count);
     } catch (err) {
