@@ -32,8 +32,9 @@ jobs:
           node-version: '18'
           cache: 'npm'
           
-      - name: Install Supabase CLI
-        run: npm install -g supabase@latest
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
         
       - name: Validate Migration Files
         run: |
