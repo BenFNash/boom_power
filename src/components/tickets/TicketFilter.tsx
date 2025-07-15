@@ -62,7 +62,7 @@ const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch }) => {
       label: 'Site',
       options: sites.map(site => ({
         value: site.id,
-        label: site.site_name
+        label: site.siteName
       }))
     },
   ];
