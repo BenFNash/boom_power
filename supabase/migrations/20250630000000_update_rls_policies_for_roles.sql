@@ -13,8 +13,8 @@
     - Read users have broad read access but no edit capabilities
 */
 
--- Create helper function to check if user has a specific role
-CREATE OR REPLACE FUNCTION has_role(user_uuid uuid, role_name text)
+-- Create helper function to check if user has read role
+CREATE OR REPLACE FUNCTION has_read_role(user_uuid uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
@@ -25,18 +25,8 @@ AS $$
     FROM user_roles ur
     JOIN roles r ON r.id = ur.role_id
     WHERE ur.user_id = user_uuid 
-    AND r.role_name = role_name
+    AND r.role_name = 'read' 
   );
-$$;
-
--- Create helper function to check if user has read role
-CREATE OR REPLACE FUNCTION has_read_role(user_uuid uuid)
-RETURNS boolean
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT has_role(user_uuid, 'read');
 $$;
 
 -- Create helper function to check if user has external role
@@ -46,7 +36,13 @@ LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  SELECT has_role(user_uuid, 'external');
+  SELECT EXISTS (
+    SELECT 1 
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = user_uuid 
+    AND r.role_name = 'external' 
+  );
 $$;
 
 -- Create helper function to check if user has edit role
@@ -56,7 +52,13 @@ LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  SELECT has_role(user_uuid, 'edit');
+  SELECT EXISTS (
+    SELECT 1 
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = user_uuid 
+    AND r.role_name = 'edit' 
+  );
 $$;
 
 -- Drop and recreate tickets policies with new logic
@@ -423,7 +425,6 @@ CREATE POLICY "Users can view scheduled job instances based on role"
   );
 
 -- Add comments to document the new role-based access control
-COMMENT ON FUNCTION has_role(uuid, text) IS 'Helper function to check if a user has a specific role';
 COMMENT ON FUNCTION has_read_role(uuid) IS 'Helper function to check if a user has read role';
 COMMENT ON FUNCTION has_external_role(uuid) IS 'Helper function to check if a user has external role';
 COMMENT ON FUNCTION has_edit_role(uuid) IS 'Helper function to check if a user has edit role'; 
