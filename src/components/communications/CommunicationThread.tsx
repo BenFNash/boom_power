@@ -105,9 +105,10 @@ const CommunicationThread: React.FC<CommunicationThreadProps> = ({
                 >
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-medium">
-                      {isCurrentUser(comm.userId)
+                      {
+                          isCurrentUser(comm.userId)
                         ? 'You'
-                        : `${comm.user.firstName} ${comm.user.lastName}`}
+                        : `${comm.user.email}`}
                     </span>
                     <span className="ml-2 text-xs opacity-70">
                       {formatDistanceToNow(new Date(comm.createdAt), {
