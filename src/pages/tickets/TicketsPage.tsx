@@ -21,6 +21,7 @@ const TicketsPage: React.FC = () => {
   const hasAdminRole = user?.roles?.includes('admin');
   const hasEditRole = user?.roles?.includes('edit');
   const canEdit = hasAdminRole || hasEditRole;
+  const isExternalUser = user?.roles?.includes('external');
 
   // Get current page from URL or default to 1
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -122,7 +123,7 @@ const TicketsPage: React.FC = () => {
         )}
       </div>
       
-      <TicketFilter onFilter={handleFilter} onSearch={handleSearch} />
+      <TicketFilter onFilter={handleFilter} onSearch={handleSearch} hideSiteFilter={isExternalUser} />
       
       <TicketList tickets={tickets} loading={loading} error={error} />
       

@@ -13,9 +13,10 @@ interface FilterOption {
 interface TicketFilterProps {
   onFilter: (filters: Record<string, string>) => void;
   onSearch: (query: string) => void;
+  hideSiteFilter?: boolean;
 }
 
-const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch }) => {
+const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch, hideSiteFilter }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -57,14 +58,17 @@ const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch }) => {
         { value: 'critical', label: 'Critical' },
       ],
     },
-    {
-      id: 'site_id',
-      label: 'Site',
-      options: sites.map(site => ({
-        value: site.id,
-        label: site.site_name
-      }))
-    },
+    // Only include the site filter if not hidden
+    ...(!hideSiteFilter
+      ? [{
+          id: 'site_id',
+          label: 'Site',
+          options: sites.map(site => ({
+            value: site.id,
+            label: site.siteName
+          }))
+        }]
+      : []),
   ];
 
   // Initialize filters from URL params

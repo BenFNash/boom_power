@@ -16,176 +16,102 @@ interface PaginatedResponse<T> {
   count: number;
 }
 
+interface EdgeFunctionResponse<T> {
+  data: T[];
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export const ticketService = {
-  async getTicketCounts(): Promise<TicketCounts> {
-    const { data: tickets, error } = await supabase
-      .from('tickets')
-      .select('status, target_completion_date');
-      
-    if (error) throw error;
-
-    const now = new Date();
-    return {
-      total: tickets.length,
-      open: tickets.filter(t => t.status === 'open').length,
-      assigned: tickets.filter(t => t.status === 'assigned').length,
-      resolved: tickets.filter(t => t.status === 'resolved').length,
-      cancelled: tickets.filter(t => t.status === 'cancelled').length,
-      closed: tickets.filter(t => t.status === 'closed').length,
-      overdue: tickets.filter(t => 
-        new Date(t.target_completion_date) < now && 
-        (t.status === 'open' || t.status === 'assigned')
-      ).length
-    };
-  },
-
+  // New method using edge function for secure ticket access
   async getTickets(
     filters?: Record<string, string>, 
     searchQuery?: string,
     page: number = 1,
     pageSize: number = 10
   ): Promise<PaginatedResponse<Ticket>> {
-    let query = supabase
-      .from('tickets')
-      .select(`
-        *,
-        sites!inner(
-          site_name
-        ),
-        profiles!inner(
-          id,
-          email
-        ),
-        companies:site_owner_company_id(
-          company_name
-        ),
-        assigned_company:assigned_company_id(
-          company_name
-        ),
-        company_contacts:assigned_contact_id(
-          contact_name
-        )
-      `, { count: 'exact' });
-
-    // Apply filters
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          if (key === 'status') {
-            if (value === 'open') {
-              query = query.in('status', ['open', 'assigned']);
-            } else if (value === 'overdue') {
-              const now = new Date().toISOString();
-              query = query
-                .lt('target_completion_date', now)
-                .in('status', ['open', 'assigned']);
-            } else {
-              query = query.eq('status', value);
-            }
-          } else if (key === 'type') {
-            query = query.eq('ticket_type', value.charAt(0).toUpperCase() + value.slice(1));
-          } else if (key === 'site_id') {
-            query = query.eq('site_id', value);
-          } else {
-            query = query.eq(key, value);
-          }
-        }
-      });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
     }
 
-    // Apply search
-    if (searchQuery) {
-      query = query.or(
-        `ticket_number.ilike.%${searchQuery}%,` +
-        `subject_title.ilike.%${searchQuery}%,` +
-        `description.ilike.%${searchQuery}%`
-      );
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/get-user-tickets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        filters,
+        searchQuery,
+        pagination: { page, pageSize }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch tickets');
     }
 
-    // Apply pagination and ordering
-    if (page && pageSize) {
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
-    }
-
-    query = query.order('created_at', { ascending: false });
-
-    const { data, error, count } = await query;
-
-    if (error) throw error;
-
+    const result: EdgeFunctionResponse<Ticket> = await response.json();
+    
     return {
-      data: data.map(ticket => ({
-        id: ticket.id,
-        ticketNumber: ticket.ticket_number,
-        site: ticket.sites.site_name,
-        siteOwnerCompany: ticket.companies?.company_name || '',
-        type: ticket.ticket_type.toLowerCase() as 'job' | 'fault',
-        priority: ticket.priority,
-        dateRaised: ticket.date_raised,
-        whoRaisedId: ticket.who_raised_id,
-        whoRaised: ticket.profiles.email,
-        targetCompletionDate: ticket.target_completion_date,
-        companyToAssign: ticket.assigned_company?.company_name || '',
-        companyContact: ticket.company_contacts?.contact_name || '',
-        subject: ticket.subject_title,
-        description: ticket.description || '',
-        status: ticket.status,
-        createdAt: ticket.created_at,
-        updatedAt: ticket.updated_at
-      })) as Ticket[],
-      count: count || 0
+      data: result.data,
+      count: result.count
     };
   },
 
+  // New method using edge function for secure individual ticket access
   async getTicketById(id: string): Promise<Ticket> {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(`
-        *,
-        sites!inner(
-          site_name
-        ),
-        profiles!inner(
-          id,
-          email
-        ),
-        companies:site_owner_company_id(
-          company_name
-        ),
-        assigned_company:assigned_company_id(
-          company_name
-        ),
-        company_contacts:assigned_contact_id(
-          contact_name
-        )
-      `)
-      .eq('id', id)
-      .single();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
 
-    if (error) throw error;
-    if (!data) throw new Error('Ticket not found');
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/get-ticket-by-id`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ ticketId: id }),
+    });
 
-    return {
-      id: data.id,
-      ticketNumber: data.ticket_number,
-      site: data.sites.site_name,
-      siteOwnerCompany: data.companies?.company_name || '',
-      type: data.ticket_type.toLowerCase() as 'job' | 'fault',
-      priority: data.priority,
-      dateRaised: data.date_raised,
-      whoRaisedId: data.profiles.id,
-      whoRaised: data.profiles.email,
-      targetCompletionDate: data.target_completion_date,
-      companyToAssign: data.assigned_company?.company_name || '',
-      companyContact: data.company_contacts?.contact_name || '',
-      subject: data.subject_title,
-      description: data.description || '',
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch ticket');
+    }
+
+    const result = await response.json();
+    return result.data;
+  },
+
+  // New method using edge function for secure ticket counts
+  async getTicketCounts(): Promise<TicketCounts> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/get-ticket-counts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch ticket counts');
+    }
+
+    return await response.json();
   },
 
   async createTicket(ticket: Omit<Ticket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
