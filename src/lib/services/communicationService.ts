@@ -32,7 +32,6 @@ export const communicationService = {
   },
 
   async createCommunication(communication: Omit<Communication, 'id' | 'createdAt'>) {
-    // Ensure ticketId is converted to integer if it's a string with format 'T00007'
 
     const { data, error } = await supabase
       .from('communications')

@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { Attachment } from '../../types';
+import { Attachment } from '@boom-power/types';
 import { storageService, UploadedFile } from './storageService';
 
 export const attachmentService = {

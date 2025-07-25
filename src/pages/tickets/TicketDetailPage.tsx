@@ -26,7 +26,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ticketService } from '../../lib/services/ticketService';
 import { useCommunicationStore } from '../../lib/stores/communicationStore';
 import { attachmentService } from '../../lib/services/attachmentService';
-import { Attachment } from '../../types';
+import { Attachment } from '@boom-power/types';
 import toast from 'react-hot-toast';
 
 const TicketDetailPage: React.FC = () => {
