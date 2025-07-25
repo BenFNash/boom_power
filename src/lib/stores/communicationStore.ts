@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Communication } from '../../types';
+import { Communication } from '@boom-power/types';
 import { communicationService } from '../services/communicationService';
 
 interface CommunicationState {

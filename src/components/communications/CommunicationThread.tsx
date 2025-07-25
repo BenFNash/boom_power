@@ -99,8 +99,8 @@ const CommunicationThread: React.FC<CommunicationThreadProps> = ({
                 <div
                   className={`rounded-lg p-4 max-w-[80%] ${
                     isCurrentUser(comm.userId)
-                      ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light'
-                      : 'bg-black/20 text-gray-200'
+                      ? 'bg-primary/40 black dark:bg-primary/20 dark:text-primary-light'
+                      : 'bg-black/10 dark:bg-white/10 text-gray-900 dark:text-gray-100'
                   }`}
                 >
                   <div className="mb-1 flex items-center justify-between">
@@ -148,7 +148,7 @@ const CommunicationThread: React.FC<CommunicationThreadProps> = ({
         )}
       </div>
       
-      <div className="border-t border-gray-700/50 bg-[#00080A] p-4">
+      <div className="border-t border-gray-700/50 bg-white dark:bg-[#00080A] p-4">
         {files.length > 0 && (
           <div className="mb-4 space-y-2">
             {files.map((file, index) => (

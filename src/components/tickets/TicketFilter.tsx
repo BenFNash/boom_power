@@ -168,7 +168,7 @@ const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch, hideSit
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center">
           <Filter className="mr-2 h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-300">Filters:</span>
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-300">Filters:</span>
         </div>
 
         {filterOptions.map((filterOption) => (
@@ -178,7 +178,7 @@ const TicketFilter: React.FC<TicketFilterProps> = ({ onFilter, onSearch, hideSit
               className={`flex items-center rounded-md border px-3 py-1.5 text-sm ${
                 filters[filterOption.id]
                   ? 'border-primary bg-primary/10 text-primary dark:border-primary-light dark:bg-primary/20 dark:text-primary-light'
-                  : 'border-gray-700/50 bg-black/20 text-gray-300 hover:bg-black/30'
+                  : 'border-gray-700/50 bg-black/20 text-gray-800 dark:text-gray-300 hover:bg-black/30'
               }`}
             >
               {filterOption.label}
