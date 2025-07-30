@@ -53,7 +53,10 @@ serve(async (req) => {
 
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('sit_owner_company_id')
+      .select(`
+              site_owner_company_id,
+              assigned_company_id
+             `)
       .eq('id', attachment.ticket_id)
       .single();
 
@@ -89,7 +92,7 @@ serve(async (req) => {
         ?.map(r => r.roles?.role_name as Any)
         .filter(Boolean) || ['read'];
 
-    const isAuthorized = userRoles.includes('admin')|| profile.company_id === ticket.company_id;
+    const isAuthorized = userRoles.includes('admin')|| userRoles.includes('edit') || profile.company_id === ticket.site_owner_company_id || profile.company_id == ticket.assigned_company_id;
 
     if (!isAuthorized) {
       return new Response(JSON.stringify({ error: 'Unauthorized to delete this attachment' }), {

@@ -41,7 +41,10 @@ serve(async (req) => {
     // Manually check if user is authorized to access the ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('site_owner_company_id')
+      .select(`
+              site_owner_company_id,
+              assigned_company_id
+              `)
       .eq('id', ticketId)
       .single();
 
@@ -83,7 +86,10 @@ serve(async (req) => {
         ?.map(r => r.roles?.role_name as Any)
         .filter(Boolean) || ['read'];
 
-    const isAuthorized = userRoles.includes('admin')|| profile.company_id === ticket.company_id;
+    const companyOwnsSite = profile.company_id === ticket.site_owner_company_id
+    const companyAssignedTask = profile.company_id === ticket.assigned_company_id
+
+    const isAuthorized = userRoles.includes('admin')|| userRoles.includes('edit') || companyOwnsSite || companyAssignedTask
 
     if (!isAuthorized) {
       return new Response(JSON.stringify({ error: 'Unauthorized to comment on this ticket' }), {
