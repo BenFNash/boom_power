@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.4';
 import { corsHeaders } from '../_shared/cors.ts';
-import { Role } from '@boom-power/types'
 
 const STORAGE_BUCKET = 'ticket-attachments';
 
@@ -83,7 +82,7 @@ serve(async (req) => {
     }
 
     const userRoles = profile.user_roles 
-        ?.map(r => r.roles?.role_name as Role)
+        ?.map(r => r.roles?.role_name as Any)
         .filter(Boolean) || ['read'];
 
     const isAuthorized = userRoles.includes('admin')|| profile.company_id === ticket.company_id;
