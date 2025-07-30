@@ -1,11 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.39.7';
 import { decode } from 'https://deno.land/x/djwt@v2.8/mod.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
 
 interface TicketFilters {
   status?: string;

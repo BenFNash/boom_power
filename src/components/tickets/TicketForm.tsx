@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { useAuth } from '../../context/AuthContext';
-import { Ticket, TicketType } from '../../types';
+import { Ticket, TicketType, Attachment } from '../../types';
 import { formatISO } from 'date-fns';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 import { useReferenceDataStore } from '../../lib/stores/referenceDataStore';
+import { attachmentService } from '../../lib/services/attachmentService';
+import toast from 'react-hot-toast';
 
 interface TicketFormProps {
   initialData?: Partial<Ticket>;
-  onSubmit: (data: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onSubmit: (data: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Ticket>;
   isLoading?: boolean;
 }
 
@@ -68,6 +70,7 @@ const TicketForm: React.FC<TicketFormProps> = ({
   const [selectedSiteOwnerCompanyId, setSelectedSiteOwnerCompanyId] = useState<string>('');
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [files, setFiles] = useState<File[]>([]);
+  const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>([]);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -137,28 +140,34 @@ const TicketForm: React.FC<TicketFormProps> = ({
     }
   };
 
-  const simulateFileUpload = () => {
-    if (files.length === 0) return Promise.resolve();
+  const uploadFiles = async (ticketId: string) => {
+    if (files.length === 0) return;
     
     setIsUploading(true);
     setFileUploadProgress(0);
     
-    return new Promise<void>((resolve) => {
-      const interval = setInterval(() => {
-        setFileUploadProgress((prev) => {
-          const newProgress = prev + 10;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsUploading(false);
-              resolve();
-            }, 500);
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 300);
-    });
+    try {
+      // Upload files in batches to show progress
+      const batchSize = 1;
+      const totalFiles = files.length;
+      let uploadedCount = 0;
+      
+      for (let i = 0; i < totalFiles; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        await attachmentService.uploadTicketAttachments(batch, ticketId, user!.id);
+        uploadedCount += batch.length;
+        setFileUploadProgress((uploadedCount / totalFiles) * 100);
+      }
+      
+      // Clear files after successful upload
+      setFiles([]);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      throw error;
+    } finally {
+      setIsUploading(false);
+      setFileUploadProgress(0);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,10 +178,6 @@ const TicketForm: React.FC<TicketFormProps> = ({
     }
 
     try {
-      if (files.length > 0) {
-        await simulateFileUpload();
-      }
-      
       const now = formatISO(new Date());
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + 7);
@@ -197,7 +202,21 @@ const TicketForm: React.FC<TicketFormProps> = ({
         status: initialData.status || 'open',
       };
       
-      await onSubmit(completeFormData);
+      // Submit the ticket first to get the ticket ID
+      const newTicket = await onSubmit(completeFormData);
+      console.log(newTicket);
+      
+      // Upload files if any
+      if (files.length > 0) {
+        try {
+          await uploadFiles(newTicket.id);
+          toast.success('Files uploaded successfully');
+        } catch (uploadError) {
+          console.error('Error uploading files:', uploadError);
+          toast.error('Ticket created but file upload failed. Please try uploading files again.');
+        }
+      }
+      
       navigate('/tickets');
     } catch (error) {
       console.error('Error submitting ticket:', error);
@@ -359,6 +378,15 @@ const TicketForm: React.FC<TicketFormProps> = ({
                       <span className="ml-2 text-xs text-gray-500">
                         {(file.size / 1024).toFixed(1)} KB
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFiles(files.filter((_, i) => i !== index));
+                        }}
+                        className="ml-2 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   ))}
                   
