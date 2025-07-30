@@ -32,23 +32,31 @@ export const communicationService = {
   },
 
   async createCommunication(communication: Omit<Communication, 'id' | 'createdAt'>) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
 
-    const { data, error } = await supabase
-      .from('communications')
-      .insert([{
-        ticket_id: communication.ticketId,
-        user_id: communication.userId,
-        message: communication.message
-      }])
-      .select(`
-        *,
-        user:profiles(name),
-        attachments:attachments(*)
-      `)
-      .single();
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/create-communication`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        ticketId: communication.ticketId,
+        message: communication.message,
+      }),
+    });
 
-    if (error) throw error;
-    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create communication');
+    }
+
+    const data = await response.json();
+
     // Transform the data to match the Communication interface
     const transformedData = {
       id: data.id,

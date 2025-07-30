@@ -19,7 +19,8 @@ import { useUserStore } from '../../lib/stores/userStore';
 import { useReferenceDataStore } from '../../lib/stores/referenceDataStore';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
-import { Role, User } from '../../types';
+import { User } from '../../types';
+import { Role } from '@boom-power/types'
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 

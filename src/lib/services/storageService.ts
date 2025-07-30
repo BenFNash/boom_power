@@ -9,109 +9,95 @@ export interface UploadedFile {
 }
 
 export const storageService = {
-  /**
-   * Upload a file to Supabase storage
-   */
-  async uploadFile(
-    file: File,
-    ticketId: string,
-    userId: string
-  ): Promise<UploadedFile> {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${ticketId}/${userId}/${Date.now()}.${fileExt}`;
-    
-    const { data, error } = await supabase.storage
-      .from('ticket-attachments')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      throw new Error(`Upload failed: ${error.message}`);
-    }
-
-    // Get a signed URL for the file
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from('ticket-attachments')
-      .createSignedUrl(fileName, 3600 * 24 * 365); // 1 year expiry
-
-    if (urlError) {
-      throw new Error(`Failed to create signed URL: ${urlError.message}`);
-    }
-
-    return {
-      url: urlData.signedUrl,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      path: fileName // Store the file path for future operations
-    };
-  },
-
-  /**
-   * Upload multiple files
-   */
   async uploadFiles(
     files: File[],
     ticketId: string,
-    userId: string
-  ): Promise<UploadedFile[]> {
-    const uploadPromises = files.map(file => 
-      this.uploadFile(file, ticketId, userId)
-    );
-    
+    communicationId: string | null = null
+  ): Promise<any[]> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('ticketId', ticketId);
+      if (communicationId) {
+        formData.append('communicationId', communicationId);
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/upload-attachment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload file');
+      }
+      return response.json();
+    });
+
     return Promise.all(uploadPromises);
   },
 
-  /**
-   * Delete a file from storage
-   */
-  async deleteFile(filePath: string): Promise<void> {
-    const { error } = await supabase.storage
-      .from('ticket-attachments')
-      .remove([filePath]);
+  async deleteFile(attachmentId: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
 
-    if (error) {
-      throw new Error(`Delete failed: ${error.message}`);
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/delete-attachment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ attachmentId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete file');
     }
   },
 
-  /**
-   * Get a signed URL for downloading a file
-   */
-  async getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from('ticket-attachments')
-      .createSignedUrl(filePath, expiresIn);
-
-    if (error) {
-      throw new Error(`Failed to create signed URL: ${error.message}`);
+  async downloadFile(attachmentId: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
     }
 
-    return data.signedUrl;
-  },
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const response = await fetch(`${supabaseUrl}/functions/v1/download-attachment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ attachmentId }),
+    });
 
-  /**
-   * Download a file
-   */
-  async downloadFile(filePath: string, fileName: string): Promise<void> {
-    const { data, error } = await supabase.storage
-      .from('ticket-attachments')
-      .download(filePath);
-
-    if (error) {
-      throw new Error(`Download failed: ${error.message}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create download URL');
     }
 
-    // Create a download link
-    const url = window.URL.createObjectURL(data);
+    const { signedUrl, fileName } = await response.json();
+
+    // Use the signed URL to download the file
     const link = document.createElement('a');
-    link.href = url;
+    link.href = signedUrl;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  }
-}; 
+  },
+};

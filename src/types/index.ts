@@ -1,6 +1,5 @@
 import { Database } from './database';
 
-export type Role = 'admin' | 'edit' | 'read' | 'external';
 
 export interface User {
   id: string;
