@@ -180,12 +180,10 @@ const UsersPage: React.FC = () => {
     if (!editingUser) return;
 
     try {
-      const company = companies.find(c => c.id === editForm.companyId);
-      
       await updateUser(editingUser.id, {
         ...editingUser,
         name: editForm.name,
-        company: company?.companyName || '',
+        company: editForm.companyId || '',
         roles: editForm.roles
       });
       toast.success('User profile updated successfully');

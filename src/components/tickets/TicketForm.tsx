@@ -204,7 +204,6 @@ const TicketForm: React.FC<TicketFormProps> = ({
       
       // Submit the ticket first to get the ticket ID
       const newTicket = await onSubmit(completeFormData);
-      console.log(newTicket);
       
       // Upload files if any
       if (files.length > 0) {

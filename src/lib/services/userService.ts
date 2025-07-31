@@ -45,24 +45,14 @@ export const userService = {
 
   async updateUser(id: string, data: Partial<User>) {
     // Find company ID based on company name
-    let companyId = null;
-    if (data.company) {
-      const { data: companyData } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('company_name', data.company)
-        .single();
-      companyId = companyData?.id;
-    }
-
-    // Update profile
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
         name: data.name,
-        company_id: companyId
+        company_id: data.company
       })
       .eq('id', id);
+
 
     if (profileError) throw profileError;
 
